@@ -4,8 +4,9 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 const App: React.FC = () => {
 	return (
 		<>
-			<h1>App</h1>
-			<Outlet />
+			<div className="font-inter">
+				<Outlet />
+			</div>
 			<ReactQueryDevtools initialIsOpen={false} />
 		</>
 	);
