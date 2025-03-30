@@ -31,7 +31,7 @@ const Home: React.FC = () => {
 				<div className="w-[954px] text-center">
 					<div className="px-5 pb-5 space-y-5">
 						<h1 className="font-acme text-7xl text-[#0D0D0D]">
-							A Trustless System for Drug Traceability & Transparency
+							A Trustless System for Drug Transparency & Traceability
 						</h1>
 						<p className="text-xl">
 							PharmXChain ensures pharmaceutical authenticity, prevents
