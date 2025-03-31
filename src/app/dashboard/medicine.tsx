@@ -28,6 +28,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn, truncateAddress } from "@/lib/utils";
+import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
+import RegisterMedicine from "@/components/modals/RegisterMedicine";
 
 const Medicine: React.FC = () => {
 	return (
@@ -45,10 +47,17 @@ const Medicine: React.FC = () => {
 						placeholder="Search by medicine id or name"
 					/>
 				</Button>
-				<Button variant="outline" className="h-[48px]">
-					<Plus />
-					<p> Register medicine</p>
-				</Button>
+				<Modal>
+					<ModalTrigger asChild>
+						<Button variant="outline" className="h-[48px]">
+							<Plus />
+							<p> Register medicine</p>
+						</Button>
+					</ModalTrigger>
+					<ModalContent>
+						<RegisterMedicine />
+					</ModalContent>
+				</Modal>
 			</div>
 			<DataTable />
 		</>

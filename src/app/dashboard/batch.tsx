@@ -1,10 +1,12 @@
+import React from "react";
 import { format } from "date-fns";
-import { EllipsisVertical, Plus, Search } from "lucide-react";
+import { EllipsisVertical, Plus, Search, X } from "lucide-react";
 import {
 	flexRender,
 	getCoreRowModel,
 	useReactTable,
 	createColumnHelper,
+	type Row,
 } from "@tanstack/react-table";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
@@ -22,8 +24,14 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { cn } from "@/lib/utils";
+import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
+import CreateBatch from "@/components/modals/CreateBatch";
+import MedicineHistory from "@/components/modals/MedicineHistory";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import TransferOwnership from "@/components/modals/TransferOwnership";
 
 const Batch: React.FC = () => {
 	return (
@@ -41,10 +49,18 @@ const Batch: React.FC = () => {
 						placeholder="Search by batch or medicine id"
 					/>
 				</Button>
-				<Button variant="outline" className="h-[48px]">
-					<Plus />
-					<p> Create new batch</p>
-				</Button>
+
+				<Modal>
+					<ModalTrigger asChild>
+						<Button variant="outline" className="h-[48px]">
+							<Plus />
+							<p> Create new batch</p>
+						</Button>
+					</ModalTrigger>
+					<ModalContent>
+						<CreateBatch />
+					</ModalContent>
+				</Modal>
 			</div>
 			<DataTable />
 		</>
@@ -171,52 +187,30 @@ const DataTable: React.FC = () => {
 				<TableBody>
 					{table.getRowModel().rows?.length ? (
 						<>
-							{table.getRowModel().rows.map((row) => {
-								const status = row.getValue("isActive");
-								return (
-									<TableRow
-										key={row.id}
-										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-									>
-										{row.getVisibleCells().map((cell, index) => (
-											<TableCell
-												key={cell.id}
-												className={cn({
-													"rounded-l-lg pl-5": index === 0,
-													"rounded-r-lg":
-														index === row.getVisibleCells().length,
-												})}
-											>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-										<TableCell className="rounded-r-lg ">
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<div className="w-full inline-flex justify-center">
-														<Button variant="ghost" size="icon">
-															<span className="sr-only">Open menu</span>
-															<EllipsisVertical strokeWidth={1} />
-														</Button>
-													</div>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="end"
-													className=" w-56 p-2 space-y-1"
-												>
-													<DropdownMenuItem>View history</DropdownMenuItem>
-													<DropdownMenuItem disabled={!status}>
-														Transfer ownership
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
+							{table.getRowModel().rows.map((row) => (
+								<TableRow
+									key={row.id}
+									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+								>
+									{row.getVisibleCells().map((cell, index) => (
+										<TableCell
+											key={cell.id}
+											className={cn({
+												"rounded-l-lg pl-5": index === 0,
+												"rounded-r-lg": index === row.getVisibleCells().length,
+											})}
+										>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext()
+											)}
 										</TableCell>
-									</TableRow>
-								);
-							})}
+									))}
+									<TableCell className="rounded-r-lg ">
+										<DropdownMenuAndDialog row={row} />
+									</TableCell>
+								</TableRow>
+							))}
 						</>
 					) : (
 						<TableRow>
@@ -227,6 +221,99 @@ const DataTable: React.FC = () => {
 					)}
 				</TableBody>
 			</Table>
+		</>
+	);
+};
+
+type DropdownDialogTriggerProp = {
+	row: Row<Batch>;
+};
+
+const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = ({
+	row,
+}) => {
+	const [showTransfer, setShowTransfer] = React.useState(false);
+	const [showHistory, setShowHistory] = React.useState(false);
+
+	function toggleHistory() {
+		setShowHistory(!showHistory);
+	}
+	function toggleTransfer() {
+		setShowTransfer(!showTransfer);
+	}
+
+	const status = row.getValue("isActive");
+
+	return (
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<div className="w-full inline-flex justify-center">
+						<Button variant="ghost" size="icon">
+							<span className="sr-only">Open menu</span>
+							<EllipsisVertical strokeWidth={1} />
+						</Button>
+					</div>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
+					<DropdownMenuItem onClick={toggleHistory}>
+						View history
+					</DropdownMenuItem>
+					<DropdownMenuItem disabled={!status} onClick={toggleTransfer}>
+						Transfer ownership
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			{/* Dialog for medicine history */}
+			<Dialog open={showHistory}>
+				<DialogContent className="overflow-y-scroll max-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ">
+					<VisuallyHidden asChild>
+						<DialogTitle>Medicine History</DialogTitle>
+					</VisuallyHidden>
+					<DialogClose onClick={toggleHistory} asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 z-20 "
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Close</span>
+						</Button>
+					</DialogClose>
+					<MedicineHistory />
+					<VisuallyHidden asChild>
+						<DialogDescription>
+							Detailed life cycle of medicine
+						</DialogDescription>
+					</VisuallyHidden>
+				</DialogContent>
+			</Dialog>
+
+			{/* Dialog for transfer */}
+			<Dialog open={showTransfer}>
+				<DialogContent>
+					<VisuallyHidden asChild>
+						<DialogTitle>Transfer Ownership</DialogTitle>
+					</VisuallyHidden>
+					<DialogClose onClick={toggleTransfer} asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 z-20 "
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Close</span>
+						</Button>
+					</DialogClose>
+					<TransferOwnership />
+					<VisuallyHidden asChild>
+						<DialogDescription>
+							Transfer ownership of medicine
+						</DialogDescription>
+					</VisuallyHidden>
+				</DialogContent>
+			</Dialog>
 		</>
 	);
 };

@@ -70,13 +70,13 @@ export function ModalContent({ children, className = "" }: ModalContentProps) {
 	if (!isOpen) return null;
 
 	return createPortal(
-		<div className="fixed inset-0 z-50 flex  justify-center">
+		<div className="fixed inset-0 z-50 flex items-center justify-center">
 			{/* Backdrop */}
 			<div className="absolute inset-0 bg-black/50" aria-hidden="true" />
 
 			{/* Modal */}
 			<div
-				className={`relative bg-white mt-40 h-fit rounded-lg p-6 shadow-lg max-w-md w-full mx-4 z-10 ${className}`}
+				className={`relative bg-white h-fit rounded-lg py-6 shadow-lg max-w-md w-full mx-4 z-10 ${className}`}
 				onClick={(e) => e.stopPropagation()}
 				onKeyDown={(e) => e.stopPropagation()}
 				aria-modal="true"

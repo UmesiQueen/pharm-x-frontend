@@ -1,7 +1,14 @@
 import PageTitle from "@/components/PageTitle";
 import { Outlet, NavLink } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CircleHelp, Library, Pill, Settings, UsersRound } from "lucide-react";
+import {
+	CircleHelp,
+	Library,
+	Pill,
+	Search,
+	Settings,
+	UsersRound,
+} from "lucide-react";
 import WalletAvatar from "@/assets/avatar.png";
 import { Button } from "@/components/ui/button";
 
@@ -54,6 +61,13 @@ const DashboardLayout: React.FC = () => {
 									slug="batch"
 									icon={<Library strokeWidth={1} />}
 									title="Batch"
+								/>
+							</li>
+							<li>
+								<NavMenuItem
+									slug="search"
+									icon={<Search strokeWidth={1} />}
+									title="Search"
 								/>
 							</li>
 						</ul>

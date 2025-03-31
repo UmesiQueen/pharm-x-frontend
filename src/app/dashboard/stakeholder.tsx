@@ -21,8 +21,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { cn, truncateAddress } from "@/lib/utils";
+import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
+import RegisterEntity from "@/components/modals/RegisterEntity";
 
 const Stakeholders: React.FC = () => {
 	return (
@@ -40,10 +41,17 @@ const Stakeholders: React.FC = () => {
 						placeholder="Search by reg.no, name or address"
 					/>
 				</Button>
-				<Button variant="outline" className="h-[48px]">
-					<Plus />
-					<p> Add entity</p>
-				</Button>
+				<Modal>
+					<ModalTrigger asChild>
+						<Button variant="outline" className="h-[48px]">
+							<Plus />
+							<p> Add entity</p>
+						</Button>
+					</ModalTrigger>
+					<ModalContent>
+						<RegisterEntity />
+					</ModalContent>
+				</Modal>
 			</div>
 			<DataTable />
 		</>
