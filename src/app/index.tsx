@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router";
 
 const Home: React.FC = () => {
+	const navigate = useNavigate();
+
 	return (
 		<div className="min-h-screen flex flex-col *:w-full bg-hero-pattern bg-bottom bg-cover text-[#0F0F0F] p-[30px]">
 			<nav>
@@ -39,7 +42,7 @@ const Home: React.FC = () => {
 							blockchain tracking
 						</p>
 					</div>
-					<Button>Connect Wallet</Button>
+					<Button onClick={() => navigate("/dashboard")}>Connect Wallet</Button>
 				</div>
 			</div>
 		</div>

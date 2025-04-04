@@ -1,5 +1,5 @@
 import PageTitle from "@/components/PageTitle";
-import { Outlet, NavLink } from "react-router";
+import { Outlet, NavLink, Link } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	CircleHelp,
@@ -22,13 +22,15 @@ const DashboardLayout: React.FC = () => {
 					className="row-span-12 col-span-2 bg-white rounded-[20px] p-6 pb-4 divide-y-2 flex flex-col gap-10 justify-between"
 				>
 					<div className="space-y-4">
-						<div className="inline-flex items-baseline gap-1 font-aldrich text-2xl">
-							<p>Pharm</p>
-							<span className="font-arsenal-sc font-bold text-3xl text-transparent bg-clip-text bg-gradient-to-r from-[#FF1CF7] to-[#00F0FF]">
-								X
-							</span>
-							<p>Chain</p>
-						</div>
+						<Link to="/">
+							<div className="inline-flex items-baseline gap-1 font-aldrich text-2xl">
+								<p>Pharm</p>
+								<span className="font-arsenal-sc font-bold text-3xl text-transparent bg-clip-text bg-gradient-to-r from-[#FF1CF7] to-[#00F0FF]">
+									X
+								</span>
+								<p>Chain</p>
+							</div>
+						</Link>
 						<ul className="*:flex *:items-center *:gap-4 space-y-2">
 							<li className="pb-3">
 								<Avatar className="cursor-pointer">
@@ -44,16 +46,9 @@ const DashboardLayout: React.FC = () => {
 							</li>
 							<li>
 								<NavMenuItem
-									slug="stakeholders"
-									icon={<UsersRound strokeWidth={1} />}
-									title="Stakeholders"
-								/>
-							</li>
-							<li>
-								<NavMenuItem
-									slug="medicine"
-									icon={<Pill strokeWidth={1} />}
-									title="Medicine"
+									slug="/dashboard"
+									icon={<Search strokeWidth={1} />}
+									title="Search"
 								/>
 							</li>
 							<li>
@@ -65,9 +60,16 @@ const DashboardLayout: React.FC = () => {
 							</li>
 							<li>
 								<NavMenuItem
-									slug="search"
-									icon={<Search strokeWidth={1} />}
-									title="Search"
+									slug="medicine"
+									icon={<Pill strokeWidth={1} />}
+									title="Medicine"
+								/>
+							</li>
+							<li>
+								<NavMenuItem
+									slug="stakeholders"
+									icon={<UsersRound strokeWidth={1} />}
+									title="Stakeholders"
 								/>
 							</li>
 						</ul>
@@ -91,23 +93,25 @@ const DashboardLayout: React.FC = () => {
 						</ul>
 					</div>
 				</div>
-				<div className="row-span-1 col-span-8 inline-flex justify-end">
-					<Button
-						size="lg"
-						variant="outline"
-						className="flex items-center gap-2 rounded-full px-3 h-12 w-fit"
-					>
-						<Avatar className="h-8 w-8">
-							<AvatarImage src={WalletAvatar} alt="avatar" />
-							<AvatarFallback className="font-acme bg-[#4E46B41F] text-[#4E46B4]">
-								PFP
-							</AvatarFallback>
-						</Avatar>
-						<p className="font-medium text-sm">0x0ef...8402</p>
-					</Button>
-				</div>
-				<div className="row-span-11 col-span-8 space-y-5">
-					<Outlet />
+				<div className="row-span-12 col-span-8 space-y-5">
+					<div className="flex justify-end">
+						<Button
+							size="lg"
+							variant="outline"
+							className="flex items-center gap-2 rounded-full px-3 h-10 w-fit"
+						>
+							<Avatar className="h-6 w-6">
+								<AvatarImage src={WalletAvatar} alt="avatar" />
+								<AvatarFallback className="font-acme bg-[#4E46B41F] text-[#4E46B4]">
+									PFP
+								</AvatarFallback>
+							</Avatar>
+							<p className="font-medium text-xs">0x0ef...8402</p>
+						</Button>
+					</div>
+					<div className="space-y-5">
+						<Outlet />
+					</div>
 				</div>
 			</div>
 		</>
@@ -126,6 +130,7 @@ const NavMenuItem: React.FC<NavMenuItemProps> = ({ slug, icon, title }) => {
 	return (
 		<NavLink
 			to={slug}
+			end
 			className="inline-flex w-full items-center gap-4 p-2 hover:bg-[#4d46b412] rounded-lg transition-all ease-in duration-200 cursor-pointer hover:font-medium [&.active]:font-medium [&.active]:bg-[#4d46b412]"
 		>
 			{icon}

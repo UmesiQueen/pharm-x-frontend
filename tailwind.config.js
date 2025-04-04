@@ -60,7 +60,8 @@ export default {
 				'arsenal-sc': ["Arsenal SC", "sans-serif"]
 			},
 			backgroundImage: {
-				'hero-pattern': "url('/src/assets/looper-bg.svg')"
+				'hero-pattern': "url('/src/assets/looper-bg.svg')",
+				'error': "url('/src/assets/Error.svg')"
 			}
 		}
 	},
