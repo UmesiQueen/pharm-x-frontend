@@ -1,6 +1,7 @@
 import Badge from "@mui/material/Badge";
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import PageTitle from "@/components/PageTitle";
-import { Outlet, NavLink, Link } from "react-router";
+import { Outlet, NavLink, Link, Navigate } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Bell,
@@ -18,8 +19,18 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { truncateAddress } from "@/lib/utils";
 
 const DashboardLayout: React.FC = () => {
+	const { open } = useAppKit();
+	const { address, isConnected } = useAppKitAccount();
+
+	const handleAccountClick = () => {
+		open({ view: "Account" });
+	};
+
+	if (!isConnected) return <Navigate to="/" />;
+
 	return (
 		<>
 			<PageTitle title="Dashboard" />
@@ -106,6 +117,7 @@ const DashboardLayout: React.FC = () => {
 						<Button
 							size="lg"
 							variant="outline"
+							onClick={handleAccountClick}
 							className="flex items-center gap-2 rounded-full px-3 h-10 w-fit"
 						>
 							<Avatar className="h-6 w-6">
@@ -114,7 +126,9 @@ const DashboardLayout: React.FC = () => {
 									PFP
 								</AvatarFallback>
 							</Avatar>
-							<p className="font-medium text-xs">0x0ef...8402</p>
+							<p className="font-medium text-xs">
+								{truncateAddress(String(address))}
+							</p>
 						</Button>
 					</div>
 					<div className="space-y-5">

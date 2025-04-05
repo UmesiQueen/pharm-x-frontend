@@ -1,8 +1,20 @@
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import { useNavigate } from "react-router";
+import { Button } from "@/components/ui/button";
 
 const Home: React.FC = () => {
+	const { open } = useAppKit();
+	const { isConnected } = useAppKitAccount();
 	const navigate = useNavigate();
+
+	React.useEffect(() => {
+		if (isConnected) navigate("/dashboard");
+	}, [isConnected, navigate]);
+
+	const handleConnectWallet = () => {
+		if (!isConnected) open({ view: "Connect" });
+	};
 
 	return (
 		<div className="min-h-screen flex flex-col *:w-full bg-hero-pattern bg-bottom bg-cover text-[#0F0F0F] p-[30px]">
@@ -42,7 +54,7 @@ const Home: React.FC = () => {
 							blockchain tracking
 						</p>
 					</div>
-					<Button onClick={() => navigate("/dashboard")}>Connect Wallet</Button>
+					<Button onClick={handleConnectWallet}>Connect Wallet</Button>
 				</div>
 			</div>
 		</div>
