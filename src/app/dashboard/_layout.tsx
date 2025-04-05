@@ -1,7 +1,9 @@
+import Badge from "@mui/material/Badge";
 import PageTitle from "@/components/PageTitle";
 import { Outlet, NavLink, Link } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
+	Bell,
 	CircleHelp,
 	Library,
 	Pill,
@@ -11,6 +13,11 @@ import {
 } from "lucide-react";
 import WalletAvatar from "@/assets/avatar.png";
 import { Button } from "@/components/ui/button";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 
 const DashboardLayout: React.FC = () => {
 	return (
@@ -94,7 +101,8 @@ const DashboardLayout: React.FC = () => {
 					</div>
 				</div>
 				<div className="row-span-12 col-span-8 space-y-5">
-					<div className="flex justify-end">
+					<div className="flex gap-3 items-center justify-end">
+						<NotificationBadge />
 						<Button
 							size="lg"
 							variant="outline"
@@ -136,5 +144,62 @@ const NavMenuItem: React.FC<NavMenuItemProps> = ({ slug, icon, title }) => {
 			{icon}
 			<p>{title}</p>
 		</NavLink>
+	);
+};
+
+const NotificationBadge = () => {
+	return (
+		<Popover>
+			<PopoverTrigger asChild>
+				<Button
+					size="icon"
+					className="rounded-full w-10 h-10"
+					variant="outline"
+				>
+					<Badge
+						badgeContent={2}
+						color="info"
+						anchorOrigin={{
+							vertical: "bottom",
+							horizontal: "left",
+						}}
+					>
+						<Bell absoluteStrokeWidth />
+					</Badge>
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent className="p-3 min-w-80 ">
+				<div className="min-h-56 font-space-grotesk space-y-2">
+					<div className="shadow-[0px_3px_8px_rgba(0,0,0,0.24)] rounded-md p-2">
+						<h3 className="text-sm font-medium text-red-800">
+							Low Stock Alert
+						</h3>
+						<div className="flex justify-between items-center gap-2 text-xs">
+							<p>
+								<span className="font-light">Medicine Id:</span>{" "}
+								<span>M-PAE302</span>
+							</p>
+							<p>
+								<b>4</b> left
+							</p>
+						</div>
+					</div>
+					<div className="shadow-[0px_3px_8px_rgba(0,0,0,0.24)] rounded-md p-2">
+						<h3 className="text-sm font-medium text-red-800">
+							Low Stock Alert
+						</h3>
+						<div className="flex justify-between items-center gap-2 text-xs">
+							<p>
+								<span className="font-light">Medicine Id:</span>{" "}
+								<span>M-PAE302</span>
+							</p>
+							<p>
+								<b>2</b> left
+							</p>
+						</div>
+					</div>
+				</div>
+			</PopoverContent>
+		</Popover>
 	);
 };
