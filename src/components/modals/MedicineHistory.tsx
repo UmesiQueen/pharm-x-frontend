@@ -1,6 +1,6 @@
 import { SquareArrowOutUpRight } from "lucide-react";
 import { format } from "date-fns";
-import type { Batch } from "@/app/dashboard/batch";
+import type { Batch } from "@/app/dashboard/types";
 import ClippableAddress from "@/components/ClippableAddress";
 
 const MedicineHistory: React.FC<Batch> = ({
