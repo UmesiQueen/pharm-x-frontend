@@ -1,5 +1,6 @@
+import React from "react";
 import PageTitle from "@/components/PageTitle";
-import { Copy, EllipsisVertical, Plus, Search } from "lucide-react";
+import { EllipsisVertical, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -14,6 +15,7 @@ import {
 	getCoreRowModel,
 	useReactTable,
 	createColumnHelper,
+	getFilteredRowModel,
 } from "@tanstack/react-table";
 import {
 	DropdownMenu,
@@ -21,44 +23,10 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn, truncateAddress } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
 import RegisterEntity from "@/components/modals/RegisterEntity";
-
-const Stakeholders: React.FC = () => {
-	return (
-		<>
-			<PageTitle title="Stakeholders" header={true} />
-			<div className="flex justify-between">
-				<Button
-					variant="outline"
-					className="h-[48px] w-[360px] p-3 flex items-center gap-2"
-				>
-					<Search strokeWidth={1} />
-					<input
-						type="text"
-						className="bg-transparent w-full focus:outline-none py-1"
-						placeholder="Search by reg.no, name or address"
-					/>
-				</Button>
-				<Modal>
-					<ModalTrigger asChild>
-						<Button variant="outline" className="h-[48px]">
-							<Plus />
-							<p> Add entity</p>
-						</Button>
-					</ModalTrigger>
-					<ModalContent>
-						<RegisterEntity />
-					</ModalContent>
-				</Modal>
-			</div>
-			<DataTable />
-		</>
-	);
-};
-
-export default Stakeholders;
+import ClippableAddress from "@/components/ClippableAddress";
 
 type Role = "Manufacturer" | "Supplier" | "Pharmacy";
 
@@ -89,7 +57,7 @@ const defaultData: Entity[] = [
 		regDate: 1743310732,
 		role: "Manufacturer",
 		status: true,
-		address: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
+		address: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
 	},
 	{
 		name: "MediCure Labs",
@@ -134,10 +102,12 @@ const columns = [
 	columnHelper.accessor("location", {
 		header: "Location",
 		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("role", {
 		header: "Role",
 		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("status", {
 		header: "Status",
@@ -154,24 +124,62 @@ const columns = [
 				</div>
 			);
 		},
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("address", {
 		header: "Wallet Address",
-		cell: (row) => <span>{truncateAddress(row.getValue())}</span>,
+		cell: (row) => <ClippableAddress text={row.getValue()} />,
 	}),
 ];
 
-const DataTable: React.FC = () => {
+const Stakeholders: React.FC = () => {
 	// const [data, setData] = React.useState(defaultData);
+	const [globalFilter, setGlobalFilters] = React.useState("");
 
 	const table = useReactTable({
 		data: defaultData,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
+		onGlobalFilterChange: setGlobalFilters,
+		getFilteredRowModel: getFilteredRowModel(),
+		state: {
+			globalFilter,
+		},
 	});
+
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const { value } = event.target;
+		table.setGlobalFilter(String(value));
+	};
 
 	return (
 		<>
+			<PageTitle title="Stakeholders" header={true} />
+			<div className="flex justify-between">
+				<Button
+					variant="outline"
+					className="h-[48px] w-[360px] p-3 flex items-center gap-2"
+				>
+					<Search strokeWidth={1} />
+					<input
+						type="text"
+						onChange={handleChange}
+						className="bg-transparent w-full focus:outline-none py-1"
+						placeholder="Search by reg.no, name or address"
+					/>
+				</Button>
+				<Modal>
+					<ModalTrigger asChild>
+						<Button variant="outline" className="h-[48px]">
+							<Plus />
+							<p> Add entity</p>
+						</Button>
+					</ModalTrigger>
+					<ModalContent>
+						<RegisterEntity />
+					</ModalContent>
+				</Modal>
+			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
 					{table.getHeaderGroups().map((headerGroup) => (
@@ -234,12 +242,6 @@ const DataTable: React.FC = () => {
 													className=" w-56 p-2 space-y-1"
 												>
 													<DropdownMenuItem>
-														<div className="inline-flex w-full justify-between items-center">
-															<p>Copy address</p>
-															<Copy strokeWidth={1} size={18} />
-														</div>
-													</DropdownMenuItem>
-													<DropdownMenuItem>
 														{status ? "Deactivate" : "Activate"} entity
 													</DropdownMenuItem>
 													<DropdownMenuItem>
@@ -264,3 +266,5 @@ const DataTable: React.FC = () => {
 		</>
 	);
 };
+
+export default Stakeholders;

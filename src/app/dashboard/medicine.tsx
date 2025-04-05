@@ -1,3 +1,4 @@
+import React from "react";
 import { format } from "date-fns";
 import {
 	EllipsisVertical,
@@ -10,6 +11,7 @@ import {
 	getCoreRowModel,
 	useReactTable,
 	createColumnHelper,
+	getFilteredRowModel,
 } from "@tanstack/react-table";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
@@ -27,56 +29,13 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn, truncateAddress } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
 import RegisterMedicine from "@/components/modals/RegisterMedicine";
+import ClippableAddress from "@/components/ClippableAddress";
+import type { Medicine as MedicineType } from "@/app/dashboard/types";
 
-const Medicine: React.FC = () => {
-	return (
-		<>
-			<PageTitle title="Medicine" header={true} />
-			<div className="flex justify-between">
-				<Button
-					variant="outline"
-					className="h-[48px] w-[360px] p-3 flex items-center gap-2"
-				>
-					<Search strokeWidth={1} />
-					<input
-						type="text"
-						className="bg-transparent w-full focus:outline-none py-1"
-						placeholder="Search by medicine id or name"
-					/>
-				</Button>
-				<Modal>
-					<ModalTrigger asChild>
-						<Button variant="outline" className="h-[48px]">
-							<Plus />
-							<p> Register medicine</p>
-						</Button>
-					</ModalTrigger>
-					<ModalContent>
-						<RegisterMedicine />
-					</ModalContent>
-				</Modal>
-			</div>
-			<DataTable />
-		</>
-	);
-};
-
-export default Medicine;
-
-type Medicine = {
-	medicineId: string;
-	name: string;
-	brand: string;
-	regDate: number;
-	manufacturer: string;
-	manufacturerId: string;
-	approved: boolean;
-};
-
-const defaultData: Medicine[] = [
+const defaultData: MedicineType[] = [
 	{
 		medicineId: "M-PAE01",
 		name: "Paracetamol",
@@ -97,7 +56,7 @@ const defaultData: Medicine[] = [
 	},
 ];
 
-const columnHelper = createColumnHelper<Medicine>();
+const columnHelper = createColumnHelper<MedicineType>();
 
 const columns = [
 	columnHelper.accessor("medicineId", {
@@ -111,6 +70,7 @@ const columns = [
 	columnHelper.accessor("brand", {
 		header: "Brand",
 		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("regDate", {
 		header: "Reg. Date",
@@ -118,6 +78,7 @@ const columns = [
 			const dateTime = new Date(row.getValue());
 			return <span>{format(dateTime, "PP")}</span>;
 		},
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("approved", {
 		header: "Approved",
@@ -134,28 +95,68 @@ const columns = [
 				</div>
 			);
 		},
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("manufacturer", {
 		header: "Mfg. Address",
-		cell: (row) => <span>{truncateAddress(row.getValue())}</span>,
+		cell: (row) => <ClippableAddress text={row.getValue()} />,
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("manufacturerId", {
 		header: "Mfg. Id",
 		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 ];
 
-const DataTable: React.FC = () => {
+const Medicine: React.FC = () => {
 	// const [data, setData] = React.useState(defaultData);
+	const [globalFilter, setGlobalFilters] = React.useState("");
 
 	const table = useReactTable({
 		data: defaultData,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
+		onGlobalFilterChange: setGlobalFilters,
+		getFilteredRowModel: getFilteredRowModel(),
+		state: {
+			globalFilter,
+		},
 	});
+
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const { value } = event.target;
+		table.setGlobalFilter(String(value));
+	};
 
 	return (
 		<>
+			<PageTitle title="Medicine" header={true} />
+			<div className="flex justify-between">
+				<Button
+					variant="outline"
+					className="h-[48px] w-[360px] p-3 flex items-center gap-2"
+				>
+					<Search strokeWidth={1} />
+					<input
+						type="text"
+						onChange={handleChange}
+						className="bg-transparent w-full focus:outline-none py-1"
+						placeholder="Search by medicine id or name"
+					/>
+				</Button>
+				<Modal>
+					<ModalTrigger asChild>
+						<Button variant="outline" className="h-[48px]">
+							<Plus />
+							<p> Register medicine</p>
+						</Button>
+					</ModalTrigger>
+					<ModalContent>
+						<RegisterMedicine />
+					</ModalContent>
+				</Modal>
+			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
 					{table.getHeaderGroups().map((headerGroup) => (
@@ -252,3 +253,5 @@ const DataTable: React.FC = () => {
 		</>
 	);
 };
+
+export default Medicine;

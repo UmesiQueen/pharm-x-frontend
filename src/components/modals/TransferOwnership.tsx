@@ -9,6 +9,7 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
+	FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,19 +21,40 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import type { Batch } from "@/app/dashboard/types";
 
-const formSchema = z.object({
-	quantity: z.number({ required_error: "Field cannot be empty" }),
-	role: z.enum(["manufacturer", "supplier", "pharmacy"], {
-		message: "Select a role",
-	}),
-	recipient: z
-		.string({ required_error: "Field cannot be empty" })
-		.min(2, { message: "Invalid wallet address" }),
-});
+type DispenseMedicineProps = {
+	props: { row: Batch; onCloseFn: () => void };
+};
 
-const TransferOwnership = () => {
-	const form = useForm({
+const TransferOwnership: React.FC<DispenseMedicineProps> = ({
+	props: { row, onCloseFn },
+}) => {
+	type FormValues = {
+		quantity: number;
+		role: "manufacturer" | "supplier" | "pharmacy";
+		recipient: string;
+	};
+
+	const formSchema = z.object({
+		quantity: z.coerce
+			.number({
+				required_error: "Field cannot be blank",
+				invalid_type_error: "Please enter a number",
+			})
+			.positive({ message: "Please enter a quantity greater than 0" })
+			.lt(row?.remainingQuantity + 1, {
+				message: `Max. quantity <= ${row?.remainingQuantity}`,
+			}),
+		role: z.enum(["manufacturer", "supplier", "pharmacy"], {
+			message: "Please select a role",
+		}),
+		recipient: z
+			.string({ required_error: "Field cannot be blank" })
+			.min(2, { message: "Invalid wallet address" }),
+	});
+
+	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		mode: "onChange",
 		defaultValues: {
@@ -48,9 +70,10 @@ const TransferOwnership = () => {
 			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
 
 		toast.promise(promise, {
-			loading: "Creating...",
+			loading: "Completing transaction...",
 			success: () => {
-				return "New entity has been created";
+				onCloseFn();
+				return "Transaction completed successfully";
 			},
 			error: "Error",
 		});
@@ -87,9 +110,14 @@ const TransferOwnership = () => {
 									<FormItem>
 										<FormLabel>Quantity</FormLabel>
 										<FormControl>
-											<Input type="text" {...field} placeholder="0" />
+											<Input type="number" {...field} placeholder="0" min={1} />
 										</FormControl>
 										<FormMessage />
+										{form.formState.errors?.quantity?.type !== "too_big" && (
+											<FormDescription>
+												Max. quantity {"<"}= {row?.remainingQuantity}
+											</FormDescription>
+										)}
 									</FormItem>
 								)}
 							/>
@@ -147,7 +175,7 @@ const TransferOwnership = () => {
 							/>
 
 							<div className="flex justify-end gap-2">
-								<Button variant="outline" type="button">
+								<Button variant="outline" type="button" onClick={onCloseFn}>
 									Cancel
 								</Button>
 								<Button

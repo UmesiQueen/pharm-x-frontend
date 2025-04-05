@@ -6,7 +6,7 @@ import {
 	getCoreRowModel,
 	useReactTable,
 	createColumnHelper,
-	type Row,
+	getFilteredRowModel,
 } from "@tanstack/react-table";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
@@ -28,12 +28,158 @@ import { cn } from "@/lib/utils";
 import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
 import CreateBatch from "@/components/modals/CreateBatch";
 import MedicineHistory from "@/components/modals/MedicineHistory";
-import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogClose,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import TransferOwnership from "@/components/modals/TransferOwnership";
+import type { Batch as BatchType } from "@/app/dashboard/types";
+
+const defaultData: BatchType[] = [
+	{
+		batchId: "B1-PAE01",
+		medicineId: "M-PAE01",
+		name: "Paracetamol",
+		brand: "Exzol",
+		quantity: 2000,
+		remainingQuantity: 300,
+		productionDate: 1743310732,
+		expiryDate: 1743310732,
+		isActive: true,
+		supplyChainEvents: [
+			{
+				blockHash:
+					"0000000000000000027307617d9af9bd8e93b0dd3873b52903196f6068cffa77",
+				from: "0xc0ffee254729296a45a3885639AC7E10F9d54979",
+				to: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
+				eventType: "MANUFACTURED",
+				patientId: null,
+				timestamp: 1743310742,
+			},
+			{
+				blockHash:
+					"000000000000000002730761752903196f6068cd9af9bd8e93b0dd3873bffa77",
+				from: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
+				to: "0xd03fee254729296a45a3885639AC7E10F9d5A148",
+				eventType: "TO_SUPPLIER",
+				patientId: null,
+				timestamp: 1743310732,
+			},
+			{
+				blockHash:
+					"0000000000000000027307617d73b52903196f6068cf9af9bd8e93b0dd38fa77",
+				from: "0xd03fee254729296a45a3885639AC7E10F9d5A148",
+				to: "0x44444cf1046e68e36E1aA2E0E07105eDDD1d1E9",
+				eventType: "TO_PHARMACY",
+				patientId: null,
+				timestamp: 1743310731,
+			},
+		],
+	},
+	{
+		batchId: "B1-PAE012",
+		medicineId: "M-PAE02",
+		name: "Panadol",
+		brand: "Exzol",
+		quantity: 2000,
+		remainingQuantity: 300,
+		productionDate: 1743310732,
+		expiryDate: 1743310732,
+		isActive: false,
+		supplyChainEvents: [
+			{
+				blockHash:
+					"00027307617d9af9bd8e93b0dd3873b52903196f6068cff00000000000000a77",
+				from: "0xc0ffee254729296a45a3885639AC7E10F9d54979",
+				to: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
+				eventType: "MANUFACTURED",
+				patientId: null,
+				timestamp: 1743310742,
+			},
+		],
+	},
+];
+
+const columnHelper = createColumnHelper<BatchType>();
+
+const columns = [
+	columnHelper.accessor("batchId", {
+		header: "Batch Id",
+		cell: (row) => <span>{row.getValue()}</span>,
+	}),
+	columnHelper.accessor("medicineId", {
+		header: "Medicine Id",
+		cell: (row) => <span>{row.getValue()}</span>,
+	}),
+	columnHelper.accessor("quantity", {
+		header: "Quantity",
+		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("remainingQuantity", {
+		header: "Remaining Quantity",
+		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("productionDate", {
+		header: "Prod. Date",
+		cell: (row) => {
+			const dateTime = new Date(row.getValue());
+			return <span>{format(dateTime, "PP")}</span>;
+		},
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("expiryDate", {
+		header: "Expiry Date",
+		cell: (row) => {
+			const dateTime = new Date(row.getValue());
+			return <span>{format(dateTime, "PP")}</span>;
+		},
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("isActive", {
+		header: "Status",
+		cell: (row) => {
+			const status = row.getValue() ? "Active" : "Inactive";
+			return (
+				<div
+					className={cn("capitalize rounded-[60px] text-center py-1 w-24", {
+						"text-[#2B8B38] bg-[#2B8B381A]": status === "Active",
+						"text-red-800 bg-[#7f1d1d4d]": status === "Inactive",
+					})}
+				>
+					{status}
+				</div>
+			);
+		},
+		enableGlobalFilter: false,
+	}),
+];
 
 const Batch: React.FC = () => {
+	// const [data, setData] = React.useState(defaultData);
+	const [globalFilter, setGlobalFilters] = React.useState("");
+
+	const table = useReactTable({
+		data: defaultData,
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+		onGlobalFilterChange: setGlobalFilters,
+		getFilteredRowModel: getFilteredRowModel(),
+		state: {
+			globalFilter,
+		},
+	});
+
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const { value } = event.target;
+		table.setGlobalFilter(String(value));
+	};
+
 	return (
 		<>
 			<PageTitle title="Batch" header={true} />
@@ -45,6 +191,7 @@ const Batch: React.FC = () => {
 					<Search strokeWidth={1} />
 					<input
 						type="text"
+						onChange={handleChange}
 						className="bg-transparent w-full focus:outline-none py-1"
 						placeholder="Search by batch or medicine id"
 					/>
@@ -62,106 +209,6 @@ const Batch: React.FC = () => {
 					</ModalContent>
 				</Modal>
 			</div>
-			<DataTable />
-		</>
-	);
-};
-
-export default Batch;
-
-type Batch = {
-	batchId: string;
-	medicineId: string;
-	quantity: number;
-	remainingQuantity: number;
-	productionDate: number;
-	expiryDate: number;
-	isActive: boolean;
-};
-
-const defaultData: Batch[] = [
-	{
-		batchId: "B1-PAE01",
-		medicineId: "M-PAE01",
-		quantity: 2000,
-		remainingQuantity: 300,
-		productionDate: 1743310732,
-		expiryDate: 1743310732,
-		isActive: true,
-	},
-	{
-		batchId: "B1-PAE012",
-		medicineId: "M-PAE02",
-		quantity: 2000,
-		remainingQuantity: 300,
-		productionDate: 1743310732,
-		expiryDate: 1743310732,
-		isActive: false,
-	},
-];
-
-const columnHelper = createColumnHelper<Batch>();
-
-const columns = [
-	columnHelper.accessor("batchId", {
-		header: "Batch Id",
-		cell: (row) => <span>{row.getValue()}</span>,
-	}),
-	columnHelper.accessor("medicineId", {
-		header: "Medicine Id",
-		cell: (row) => <span>{row.getValue()}</span>,
-	}),
-	columnHelper.accessor("quantity", {
-		header: "Quantity",
-		cell: (row) => <span>{row.getValue()}</span>,
-	}),
-	columnHelper.accessor("remainingQuantity", {
-		header: "Remaining Quantity",
-		cell: (row) => <span>{row.getValue()}</span>,
-	}),
-	columnHelper.accessor("productionDate", {
-		header: "Prod. Date",
-		cell: (row) => {
-			const dateTime = new Date(row.getValue());
-			return <span>{format(dateTime, "PP")}</span>;
-		},
-	}),
-	columnHelper.accessor("expiryDate", {
-		header: "Expiry Date",
-		cell: (row) => {
-			const dateTime = new Date(row.getValue());
-			return <span>{format(dateTime, "PP")}</span>;
-		},
-	}),
-	columnHelper.accessor("isActive", {
-		header: "Status",
-		cell: (row) => {
-			const status = row.getValue() ? "Active" : "Inactive";
-			return (
-				<div
-					className={cn("capitalize rounded-[60px] text-center py-1 w-24", {
-						"text-[#2B8B38] bg-[#2B8B381A]": status === "Active",
-						"text-red-800 bg-[#7f1d1d4d]": status === "Inactive",
-					})}
-				>
-					{status}
-				</div>
-			);
-		},
-	}),
-];
-
-const DataTable: React.FC = () => {
-	// const [data, setData] = React.useState(defaultData);
-
-	const table = useReactTable({
-		data: defaultData,
-		columns,
-		getCoreRowModel: getCoreRowModel(),
-	});
-
-	return (
-		<>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
 					{table.getHeaderGroups().map((headerGroup) => (
@@ -207,7 +254,7 @@ const DataTable: React.FC = () => {
 										</TableCell>
 									))}
 									<TableCell className="rounded-r-lg ">
-										<DropdownMenuAndDialog row={row} />
+										<DropdownMenuAndDialog {...row.original} />
 									</TableCell>
 								</TableRow>
 							))}
@@ -225,13 +272,9 @@ const DataTable: React.FC = () => {
 	);
 };
 
-type DropdownDialogTriggerProp = {
-	row: Row<Batch>;
-};
+export default Batch;
 
-const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = ({
-	row,
-}) => {
+const DropdownMenuAndDialog: React.FC<BatchType> = (row) => {
 	const [showTransfer, setShowTransfer] = React.useState(false);
 	const [showHistory, setShowHistory] = React.useState(false);
 
@@ -241,8 +284,6 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = ({
 	function toggleTransfer() {
 		setShowTransfer(!showTransfer);
 	}
-
-	const status = row.getValue("isActive");
 
 	return (
 		<>
@@ -259,7 +300,7 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = ({
 					<DropdownMenuItem onClick={toggleHistory}>
 						View history
 					</DropdownMenuItem>
-					<DropdownMenuItem disabled={!status} onClick={toggleTransfer}>
+					<DropdownMenuItem disabled={!row?.isActive} onClick={toggleTransfer}>
 						Transfer ownership
 					</DropdownMenuItem>
 				</DropdownMenuContent>
@@ -281,7 +322,7 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = ({
 							<span className="sr-only">Close</span>
 						</Button>
 					</DialogClose>
-					<MedicineHistory />
+					<MedicineHistory {...row} />
 					<VisuallyHidden asChild>
 						<DialogDescription>
 							Detailed life cycle of medicine
@@ -306,7 +347,7 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = ({
 							<span className="sr-only">Close</span>
 						</Button>
 					</DialogClose>
-					<TransferOwnership />
+					<TransferOwnership props={{ row, onCloseFn: toggleTransfer }} />
 					<VisuallyHidden asChild>
 						<DialogDescription>
 							Transfer ownership of medicine

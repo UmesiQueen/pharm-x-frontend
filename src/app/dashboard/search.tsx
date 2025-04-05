@@ -6,7 +6,7 @@ import {
 	getCoreRowModel,
 	useReactTable,
 	createColumnHelper,
-	type Row,
+	getFilteredRowModel,
 } from "@tanstack/react-table";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
@@ -34,63 +34,74 @@ import {
 import MedicineHistory from "@/components/modals/MedicineHistory";
 import DispenseMedicine from "@/components/modals/DispenseMedicine";
 import { cn } from "@/lib/utils";
+import type { Batch } from "@/app/dashboard/types";
 
-const Search: React.FC = () => {
-	return (
-		<>
-			<PageTitle title="Search Available Stock" header={true} />
-			<div className="flex justify-between">
-				<Button
-					variant="outline"
-					className="h-[48px] w-[360px] p-3 flex items-center gap-2"
-				>
-					<SearchIcon strokeWidth={1} />
-					<input
-						type="text"
-						className="bg-transparent w-full focus:outline-none py-1"
-						placeholder="Search by medicine id or name"
-					/>
-				</Button>
-			</div>
-			<DataTable />
-		</>
-	);
-};
-
-export default Search;
-
-type AvailableMedicine = {
-	batchId: string;
-	medicineId: string;
-	name: string;
-	brand: string;
-	remainingQuantity: number;
-	expiryDate: number;
-	isActive: boolean;
-};
-
-const defaultData: AvailableMedicine[] = [
+const defaultData: Batch[] = [
 	{
 		batchId: "B1-PAE01",
 		medicineId: "M-PAE01",
 		name: "Paracetamol",
 		brand: "Exzol",
+		quantity: 2000,
 		remainingQuantity: 300,
+		productionDate: 1743310732,
 		expiryDate: 1743310732,
 		isActive: true,
+		supplyChainEvents: [
+			{
+				blockHash:
+					"0000000000000000027307617d9af9bd8e93b0dd3873b52903196f6068cffa77",
+				from: "0xc0ffee254729296a45a3885639AC7E10F9d54979",
+				to: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
+				eventType: "MANUFACTURED",
+				patientId: null,
+				timestamp: 1743310742,
+			},
+			{
+				blockHash:
+					"000000000000000002730761752903196f6068cd9af9bd8e93b0dd3873bffa77",
+				from: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
+				to: "0xd03fee254729296a45a3885639AC7E10F9d5A148",
+				eventType: "TO_SUPPLIER",
+				patientId: null,
+				timestamp: 1743310732,
+			},
+			{
+				blockHash:
+					"0000000000000000027307617d73b52903196f6068cf9af9bd8e93b0dd38fa77",
+				from: "0xd03fee254729296a45a3885639AC7E10F9d5A148",
+				to: "0x44444cf1046e68e36E1aA2E0E07105eDDD1d1E9",
+				eventType: "TO_PHARMACY",
+				patientId: null,
+				timestamp: 1743310731,
+			},
+		],
 	},
 	{
 		batchId: "B1-PAE012",
 		medicineId: "M-PAE02",
 		name: "Panadol",
 		brand: "Exzol",
+		quantity: 2000,
 		remainingQuantity: 300,
+		productionDate: 1743310732,
 		expiryDate: 1743310732,
 		isActive: false,
+		supplyChainEvents: [
+			{
+				blockHash:
+					"00027307617d9af9bd8e93b0dd3873b52903196f6068cff00000000000000a77",
+				from: "0xc0ffee254729296a45a3885639AC7E10F9d54979",
+				to: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
+				eventType: "MANUFACTURED",
+				patientId: null,
+				timestamp: 1743310742,
+			},
+		],
 	},
 ];
 
-const columnHelper = createColumnHelper<AvailableMedicine>();
+const columnHelper = createColumnHelper<Batch>();
 
 const columns = [
 	columnHelper.accessor("medicineId", {
@@ -104,24 +115,52 @@ const columns = [
 	columnHelper.accessor("brand", {
 		header: "Brand",
 		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("remainingQuantity", {
 		header: "Available Stock",
 		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 ];
 
-const DataTable: React.FC = () => {
+const Search: React.FC = () => {
 	// const [data, setData] = React.useState(defaultData);
+	const [globalFilter, setGlobalFilters] = React.useState("");
 
 	const table = useReactTable({
 		data: defaultData,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
+		onGlobalFilterChange: setGlobalFilters,
+		getFilteredRowModel: getFilteredRowModel(),
+		state: {
+			globalFilter,
+		},
 	});
+
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const { value } = event.target;
+		table.setGlobalFilter(String(value));
+	};
 
 	return (
 		<>
+			<PageTitle title="Search Available Stock" header={true} />
+			<div className="flex justify-between">
+				<Button
+					variant="outline"
+					className="h-[48px] w-[360px] p-3 flex items-center gap-2"
+				>
+					<SearchIcon strokeWidth={1} />
+					<input
+						type="text"
+						onChange={handleChange}
+						className="bg-transparent w-full focus:outline-none py-1"
+						placeholder="Search by medicine id or name"
+					/>
+				</Button>
+			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
 					{table.getHeaderGroups().map((headerGroup) => (
@@ -167,7 +206,7 @@ const DataTable: React.FC = () => {
 										</TableCell>
 									))}
 									<TableCell className="rounded-r-lg ">
-										<DropdownMenuAndDialog row={row} />
+										<DropdownMenuAndDialog {...row.original} />
 									</TableCell>
 								</TableRow>
 							))}
@@ -185,19 +224,17 @@ const DataTable: React.FC = () => {
 	);
 };
 
-type DropdownDialogTriggerProp = {
-	row?: Row<AvailableMedicine>;
-};
+export default Search;
 
-const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = () => {
-	const [showTransfer, setShowTransfer] = React.useState(false);
+const DropdownMenuAndDialog: React.FC<Batch> = (row) => {
+	const [showDispense, setShowDispense] = React.useState(false);
 	const [showHistory, setShowHistory] = React.useState(false);
 
 	function toggleHistory() {
 		setShowHistory(!showHistory);
 	}
-	function toggleTransfer() {
-		setShowTransfer(!showTransfer);
+	function toggleDispense() {
+		setShowDispense(!showDispense);
 	}
 
 	return (
@@ -212,11 +249,11 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = () => {
 					</div>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
-					<DropdownMenuItem onClick={toggleTransfer}>
-						Dispense medicine
-					</DropdownMenuItem>
 					<DropdownMenuItem onClick={toggleHistory}>
 						View history
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={toggleDispense}>
+						Dispense medicine
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -237,7 +274,7 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = () => {
 							<span className="sr-only">Close</span>
 						</Button>
 					</DialogClose>
-					<MedicineHistory />
+					<MedicineHistory {...row} />
 					<VisuallyHidden asChild>
 						<DialogDescription>
 							Detailed life cycle of medicine
@@ -247,12 +284,12 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = () => {
 			</Dialog>
 
 			{/* Dialog to dispense */}
-			<Dialog open={showTransfer}>
+			<Dialog open={showDispense}>
 				<DialogContent>
 					<VisuallyHidden asChild>
 						<DialogTitle>Dispense Medicine</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleTransfer} asChild>
+					<DialogClose onClick={toggleDispense} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -262,7 +299,7 @@ const DropdownMenuAndDialog: React.FC<DropdownDialogTriggerProp> = () => {
 							<span className="sr-only">Close</span>
 						</Button>
 					</DialogClose>
-					<DispenseMedicine />
+					<DispenseMedicine props={{ row, onCloseFn: toggleDispense }} />
 					<VisuallyHidden asChild>
 						<DialogDescription>Dispense medicine to patient</DialogDescription>
 					</VisuallyHidden>
