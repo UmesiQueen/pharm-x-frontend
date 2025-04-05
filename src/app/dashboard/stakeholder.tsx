@@ -1,6 +1,7 @@
 import React from "react";
-import PageTitle from "@/components/PageTitle";
-import { EllipsisVertical, Plus, Search } from "lucide-react";
+import { EllipsisVertical, Plus, Search, X } from "lucide-react";
+import { toast } from "sonner";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -17,6 +18,7 @@ import {
 	createColumnHelper,
 	getFilteredRowModel,
 } from "@tanstack/react-table";
+import PageTitle from "@/components/PageTitle";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -27,6 +29,14 @@ import { cn } from "@/lib/utils";
 import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
 import RegisterEntity from "@/components/modals/RegisterEntity";
 import ClippableAddress from "@/components/ClippableAddress";
+import {
+	Dialog,
+	DialogContent,
+	DialogClose,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import ConfirmationModal from "@/components/modals/Confirmation";
 
 type Role = "Manufacturer" | "Supplier" | "Pharmacy";
 
@@ -205,54 +215,30 @@ const Stakeholders: React.FC = () => {
 				<TableBody>
 					{table.getRowModel().rows?.length ? (
 						<>
-							{table.getRowModel().rows.map((row) => {
-								const status = row.getValue("status");
-								return (
-									<TableRow
-										key={row.id}
-										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-									>
-										{row.getVisibleCells().map((cell, index) => (
-											<TableCell
-												key={cell.id}
-												className={cn({
-													"rounded-l-lg pl-5": index === 0,
-													"rounded-r-lg":
-														index === row.getVisibleCells().length,
-												})}
-											>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-										<TableCell className="rounded-r-lg ">
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<div className="w-full inline-flex justify-center">
-														<Button variant="ghost" size="icon">
-															<span className="sr-only">Open menu</span>
-															<EllipsisVertical strokeWidth={1} />
-														</Button>
-													</div>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="end"
-													className=" w-56 p-2 space-y-1"
-												>
-													<DropdownMenuItem>
-														{status ? "Deactivate" : "Activate"} entity
-													</DropdownMenuItem>
-													<DropdownMenuItem>
-														<p className="text-red-600">Delete account</p>
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
+							{table.getRowModel().rows.map((row) => (
+								<TableRow
+									key={row.id}
+									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+								>
+									{row.getVisibleCells().map((cell, index) => (
+										<TableCell
+											key={cell.id}
+											className={cn({
+												"rounded-l-lg pl-5": index === 0,
+												"rounded-r-lg": index === row.getVisibleCells().length,
+											})}
+										>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext()
+											)}
 										</TableCell>
-									</TableRow>
-								);
-							})}
+									))}
+									<TableCell className="rounded-r-lg ">
+										<DropdownMenuAndDialog {...row.original} />
+									</TableCell>
+								</TableRow>
+							))}
 						</>
 					) : (
 						<TableRow>
@@ -268,3 +254,143 @@ const Stakeholders: React.FC = () => {
 };
 
 export default Stakeholders;
+
+const DropdownMenuAndDialog: React.FC<Entity> = ({ regNumber, status }) => {
+	const [showStatusModal, setShowStatusModal] = React.useState(false);
+	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+
+	function toggleStatusModal() {
+		setShowStatusModal(!showStatusModal);
+	}
+
+	function toggleDeleteModal() {
+		setShowDeleteModal(!showDeleteModal);
+	}
+
+	function handleStatusState() {
+		const promise = () =>
+			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+
+		if (status) {
+			toast.promise(promise, {
+				loading: "Completing transaction...",
+				success: () => {
+					toggleStatusModal();
+					return "Entity deactivated!";
+				},
+				error: "Error",
+			});
+		} else {
+			toast.promise(promise, {
+				loading: "Completing transaction...",
+				success: () => {
+					toggleStatusModal();
+					return "Entity activated!";
+				},
+				error: "Error",
+			});
+		}
+	}
+
+	function handleDeleteMedicine() {
+		const promise = () =>
+			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+
+		toast.promise(promise, {
+			loading: "Deleting...",
+			success: () => {
+				toggleDeleteModal();
+				return "Entity deleted!";
+			},
+			error: "Error",
+		});
+	}
+
+	const confirmationModalValues = {
+		approvalModal: {
+			title: `${status ? "Deactivate" : "Activate"} entity`,
+			onCloseFn: toggleStatusModal,
+			onSubmit: handleStatusState,
+		},
+		deleteModal: {
+			title: "Delete entity",
+			onCloseFn: toggleDeleteModal,
+			onSubmit: handleDeleteMedicine,
+		},
+	};
+	console.log(regNumber, "regNumber");
+
+	return (
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<div className="w-full inline-flex justify-center">
+						<Button variant="ghost" size="icon">
+							<span className="sr-only">Open menu</span>
+							<EllipsisVertical strokeWidth={1} />
+						</Button>
+					</div>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
+					<DropdownMenuItem onClick={toggleStatusModal}>
+						{status ? "Deactivate" : "Activate"} entity
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={toggleDeleteModal}>
+						<p className="text-red-600">Delete entity</p>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			{/* Dialog for medicine approval */}
+			<Dialog open={showStatusModal}>
+				<DialogContent className="overflow-y-scroll max-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ">
+					<VisuallyHidden asChild>
+						<DialogTitle>
+							{status ? "Disapprove" : "Approve"} Medicine
+						</DialogTitle>
+					</VisuallyHidden>
+					<DialogClose onClick={toggleStatusModal} asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 z-20 "
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Close</span>
+						</Button>
+					</DialogClose>
+					<ConfirmationModal {...confirmationModalValues.approvalModal} />
+					<VisuallyHidden asChild>
+						<DialogDescription>
+							Confirmation modal for medicine{" "}
+							{status ? "disapproval" : "approval"}
+						</DialogDescription>
+					</VisuallyHidden>
+				</DialogContent>
+			</Dialog>
+
+			{/* Dialog for deletion */}
+			<Dialog open={showDeleteModal}>
+				<DialogContent>
+					<VisuallyHidden asChild>
+						<DialogTitle>Delete Medicine</DialogTitle>
+					</VisuallyHidden>
+					<DialogClose onClick={toggleDeleteModal} asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 z-20 "
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Close</span>
+						</Button>
+					</DialogClose>
+					<ConfirmationModal {...confirmationModalValues.deleteModal} />
+					<VisuallyHidden asChild>
+						<DialogDescription>Delete medicine</DialogDescription>
+					</VisuallyHidden>
+				</DialogContent>
+			</Dialog>
+		</>
+	);
+};

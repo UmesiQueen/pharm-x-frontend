@@ -5,6 +5,7 @@ import {
 	Plus,
 	Search,
 	SquareArrowOutUpRight,
+	X,
 } from "lucide-react";
 import {
 	flexRender,
@@ -13,6 +14,8 @@ import {
 	createColumnHelper,
 	getFilteredRowModel,
 } from "@tanstack/react-table";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { toast } from "sonner";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +37,14 @@ import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
 import RegisterMedicine from "@/components/modals/RegisterMedicine";
 import ClippableAddress from "@/components/ClippableAddress";
 import type { Medicine as MedicineType } from "@/app/dashboard/types";
+import {
+	Dialog,
+	DialogContent,
+	DialogClose,
+	DialogDescription,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import ConfirmationModal from "@/components/modals/Confirmation";
 
 const defaultData: MedicineType[] = [
 	{
@@ -182,64 +193,30 @@ const Medicine: React.FC = () => {
 				<TableBody>
 					{table.getRowModel().rows?.length ? (
 						<>
-							{table.getRowModel().rows.map((row) => {
-								const status = row.getValue("approved");
-								return (
-									<TableRow
-										key={row.id}
-										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-									>
-										{row.getVisibleCells().map((cell, index) => (
-											<TableCell
-												key={cell.id}
-												className={cn({
-													"rounded-l-lg pl-5": index === 0,
-													"rounded-r-lg":
-														index === row.getVisibleCells().length,
-												})}
-											>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-										<TableCell className="rounded-r-lg ">
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<div className="w-full inline-flex justify-center">
-														<Button variant="ghost" size="icon">
-															<span className="sr-only">Open menu</span>
-															<EllipsisVertical strokeWidth={1} />
-														</Button>
-													</div>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="end"
-													className=" w-56 p-2 space-y-1"
-												>
-													<DropdownMenuItem>
-														{status ? "Disapprove" : "Approve"} medicine
-													</DropdownMenuItem>
-													<DropdownMenuItem>
-														<p className="text-red-600">Delete medicine</p>
-													</DropdownMenuItem>
-													<DropdownMenuItem>
-														<div className="inline-flex w-full justify-between items-center text-blue-600">
-															<p>View on block explorer</p>
-															<SquareArrowOutUpRight
-																strokeWidth={1}
-																size={18}
-																color="#2563eb"
-															/>
-														</div>
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
+							{table.getRowModel().rows.map((row) => (
+								<TableRow
+									key={row.id}
+									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+								>
+									{row.getVisibleCells().map((cell, index) => (
+										<TableCell
+											key={cell.id}
+											className={cn({
+												"rounded-l-lg pl-5": index === 0,
+												"rounded-r-lg": index === row.getVisibleCells().length,
+											})}
+										>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext()
+											)}
 										</TableCell>
-									</TableRow>
-								);
-							})}
+									))}
+									<TableCell className="rounded-r-lg ">
+										<DropdownMenuAndDialog {...row.original} />
+									</TableCell>
+								</TableRow>
+							))}
 						</>
 					) : (
 						<TableRow>
@@ -255,3 +232,156 @@ const Medicine: React.FC = () => {
 };
 
 export default Medicine;
+
+const DropdownMenuAndDialog: React.FC<MedicineType> = ({
+	medicineId,
+	approved,
+}) => {
+	const [showApprovalModal, setShowApprovalModal] = React.useState(false);
+	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+
+	function toggleApprovalModal() {
+		setShowApprovalModal(!showApprovalModal);
+	}
+
+	function toggleDeleteModal() {
+		setShowDeleteModal(!showDeleteModal);
+	}
+
+	function handleApprovalState() {
+		const promise = () =>
+			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+
+		if (approved) {
+			toast.promise(promise, {
+				loading: "Completing transaction...",
+				success: () => {
+					toggleApprovalModal();
+					return "Medicine disapproved!";
+				},
+				error: "Error",
+			});
+		} else {
+			toast.promise(promise, {
+				loading: "Completing transaction...",
+				success: () => {
+					toggleApprovalModal();
+					return "Medicine approved!";
+				},
+				error: "Error",
+			});
+		}
+	}
+
+	function handleDeleteMedicine() {
+		const promise = () =>
+			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+
+		toast.promise(promise, {
+			loading: "Deleting...",
+			success: () => {
+				toggleDeleteModal();
+				return "Medicine deleted!";
+			},
+			error: "Error",
+		});
+	}
+
+	const confirmationModalValues = {
+		approvalModal: {
+			title: `${approved ? "Disapprove" : "Approve"} medicine`,
+			onCloseFn: toggleApprovalModal,
+			onSubmit: handleApprovalState,
+		},
+		deleteModal: {
+			title: "Delete medicine",
+			onCloseFn: toggleDeleteModal,
+			onSubmit: handleDeleteMedicine,
+		},
+	};
+	console.log(medicineId, "Medicine Id");
+
+	return (
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<div className="w-full inline-flex justify-center">
+						<Button variant="ghost" size="icon">
+							<span className="sr-only">Open menu</span>
+							<EllipsisVertical strokeWidth={1} />
+						</Button>
+					</div>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
+					<DropdownMenuItem onClick={toggleApprovalModal}>
+						{approved ? "Disapprove" : "Approve"} medicine
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={toggleDeleteModal}>
+						<p className="text-red-600">Delete medicine</p>
+					</DropdownMenuItem>
+					<DropdownMenuItem>
+						<div className="inline-flex w-full justify-between items-center text-blue-600">
+							<p>View on block explorer</p>
+							<SquareArrowOutUpRight
+								strokeWidth={1}
+								size={18}
+								color="#2563eb"
+							/>
+						</div>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			{/* Dialog for medicine approval */}
+			<Dialog open={showApprovalModal}>
+				<DialogContent className="overflow-y-scroll max-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ">
+					<VisuallyHidden asChild>
+						<DialogTitle>
+							{approved ? "Disapprove" : "Approve"} Medicine
+						</DialogTitle>
+					</VisuallyHidden>
+					<DialogClose onClick={toggleApprovalModal} asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 z-20 "
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Close</span>
+						</Button>
+					</DialogClose>
+					<ConfirmationModal {...confirmationModalValues.approvalModal} />
+					<VisuallyHidden asChild>
+						<DialogDescription>
+							Confirmation modal for medicine{" "}
+							{approved ? "disapproval" : "approval"}
+						</DialogDescription>
+					</VisuallyHidden>
+				</DialogContent>
+			</Dialog>
+
+			{/* Dialog for deletion */}
+			<Dialog open={showDeleteModal}>
+				<DialogContent>
+					<VisuallyHidden asChild>
+						<DialogTitle>Delete Medicine</DialogTitle>
+					</VisuallyHidden>
+					<DialogClose onClick={toggleDeleteModal} asChild>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="absolute top-2 right-2 z-20 "
+						>
+							<X className="h-4 w-4" />
+							<span className="sr-only">Close</span>
+						</Button>
+					</DialogClose>
+					<ConfirmationModal {...confirmationModalValues.deleteModal} />
+					<VisuallyHidden asChild>
+						<DialogDescription>Delete medicine</DialogDescription>
+					</VisuallyHidden>
+				</DialogContent>
+			</Dialog>
+		</>
+	);
+};
