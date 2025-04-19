@@ -1,0 +1,256 @@
+[
+	{ "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" },
+			{ "internalType": "bool", "name": "isActive", "type": "bool" }
+		],
+		"name": "GlobalRegistry__EntityAlreadyActivated",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" },
+			{ "internalType": "bool", "name": "isActive", "type": "bool" }
+		],
+		"name": "GlobalRegistry__EntityAlreadyDeactivated",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" },
+			{
+				"internalType": "enum IGlobalRegistry.Role",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "GlobalRegistry__EntityAlreadyRegistered",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "GlobalRegistry__EntityDoesNotExist",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "GlobalRegistry__InvalidManufacturerAddress",
+		"type": "error"
+	},
+	{ "inputs": [], "name": "GlobalRegistry__SenderIsNotOwner", "type": "error" },
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "entityAddress",
+				"type": "address"
+			}
+		],
+		"name": "EntityActivated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "entityAddress",
+				"type": "address"
+			}
+		],
+		"name": "EntityDeactivated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "entityAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum IGlobalRegistry.Role",
+				"name": "role",
+				"type": "uint8"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			}
+		],
+		"name": "EntityRegistered",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" }
+		],
+		"name": "activateEntity",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" }
+		],
+		"name": "deactivateEntity",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+		"name": "entities",
+		"outputs": [
+			{ "internalType": "string", "name": "name", "type": "string" },
+			{ "internalType": "string", "name": "location", "type": "string" },
+			{
+				"internalType": "string",
+				"name": "registrationNumber",
+				"type": "string"
+			},
+			{ "internalType": "string", "name": "license", "type": "string" },
+			{
+				"internalType": "enum IGlobalRegistry.Role",
+				"name": "role",
+				"type": "uint8"
+			},
+			{ "internalType": "bool", "name": "isActive", "type": "bool" },
+			{
+				"internalType": "uint256",
+				"name": "registrationDate",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"name": "entityAddresses",
+		"outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" }
+		],
+		"name": "getEntityDetails",
+		"outputs": [
+			{ "internalType": "string", "name": "name", "type": "string" },
+			{ "internalType": "string", "name": "location", "type": "string" },
+			{
+				"internalType": "string",
+				"name": "registrationNumber",
+				"type": "string"
+			},
+			{ "internalType": "string", "name": "license", "type": "string" },
+			{
+				"internalType": "enum IGlobalRegistry.Role",
+				"name": "role",
+				"type": "uint8"
+			},
+			{ "internalType": "bool", "name": "isActive", "type": "bool" },
+			{
+				"internalType": "uint256",
+				"name": "registrationDate",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" }
+		],
+		"name": "getEntityRole",
+		"outputs": [
+			{
+				"internalType": "enum IGlobalRegistry.Role",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "manufacturerAddress",
+				"type": "address"
+			}
+		],
+		"name": "getManufacturerId",
+		"outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRegisteredEntityAddresses",
+		"outputs": [
+			{ "internalType": "address[]", "name": "", "type": "address[]" }
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRegisteredEntityCount",
+		"outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" },
+			{
+				"internalType": "enum IGlobalRegistry.Role",
+				"name": "role",
+				"type": "uint8"
+			},
+			{ "internalType": "string", "name": "name", "type": "string" },
+			{ "internalType": "string", "name": "location", "type": "string" },
+			{ "internalType": "string", "name": "license", "type": "string" },
+			{
+				"internalType": "string",
+				"name": "registrationNumber",
+				"type": "string"
+			}
+		],
+		"name": "registerEntity",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "entityAddress", "type": "address" }
+		],
+		"name": "verifyEntity",
+		"outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

@@ -2,6 +2,13 @@ import React from "react";
 import { EllipsisVertical, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import {
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+	createColumnHelper,
+	getFilteredRowModel,
+} from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -11,13 +18,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-	createColumnHelper,
-	getFilteredRowModel,
-} from "@tanstack/react-table";
 import PageTitle from "@/components/PageTitle";
 import {
 	DropdownMenu,
@@ -37,72 +37,19 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import ConfirmationModal from "@/components/modals/Confirmation";
-
-type Role = "Manufacturer" | "Supplier" | "Pharmacy";
-
-type Entity = {
-	name: string;
-	location: string;
-	regNumber: string;
-	regDate: number;
-	role: Role;
-	status: boolean;
-	address: string;
-};
-
-const defaultData: Entity[] = [
-	{
-		name: "MediCure Labs",
-		location: "Nairobi, Kenya",
-		regNumber: "MFG-201",
-		regDate: 1743310732,
-		role: "Manufacturer",
-		status: true,
-		address: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-	},
-	{
-		name: "MediCure Labs",
-		location: "Nairobi, Kenya",
-		regNumber: "MFG-201",
-		regDate: 1743310732,
-		role: "Manufacturer",
-		status: true,
-		address: "0x999999cf1046e68e36E1aA2E0E07105eDDD1f08E",
-	},
-	{
-		name: "MediCure Labs",
-		location: "Nairobi, Kenya",
-		regNumber: "MFG-201",
-		regDate: 1743310732,
-		role: "Manufacturer",
-		status: true,
-		address: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-	},
-	{
-		name: "MediCure Labs",
-		location: "Nairobi, Kenya",
-		regNumber: "MFG-201",
-		regDate: 1743310732,
-		role: "Manufacturer",
-		status: false,
-		address: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-	},
-	{
-		name: "MediCure Labs",
-		location: "Nairobi, Kenya",
-		regNumber: "MFG-201",
-		regDate: 1743310732,
-		role: "Manufacturer",
-		status: true,
-		address: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-	},
-];
+import { useGlobalEntities } from "@/hooks/useGlobalEntities";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Entity } from "@/app/dashboard/stakeholders/types";
 
 const columnHelper = createColumnHelper<Entity>();
 
 const columns = [
 	columnHelper.accessor("regNumber", {
-		header: "Reg. Number",
+		header: "Reg. No.",
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
+	}),
+	columnHelper.accessor("license", {
+		header: "License No.",
 		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("name", {
@@ -111,7 +58,7 @@ const columns = [
 	}),
 	columnHelper.accessor("location", {
 		header: "Location",
-		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
+		cell: (row) => <span className="lowercase">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("role", {
@@ -125,7 +72,7 @@ const columns = [
 			const status = row.getValue() ? "Active" : "Inactive";
 			return (
 				<div
-					className={cn("capitalize rounded-[60px] text-center py-1 w-28", {
+					className={cn("capitalize rounded-[60px] text-center py-1 w-24", {
 						"text-[#2B8B38] bg-[#2B8B381A]": status === "Active",
 						"text-red-800 bg-[#7f1d1d4d]": status === "Inactive",
 					})}
@@ -143,11 +90,18 @@ const columns = [
 ];
 
 const Stakeholders: React.FC = () => {
-	// const [data, setData] = React.useState(defaultData);
+	const [data, setData] = React.useState<Entity[]>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
+	const { entityDetails, isGlobalEntitiesFetched } = useGlobalEntities();
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	React.useEffect(() => {
+		if (isGlobalEntitiesFetched) setData(entityDetails);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isGlobalEntitiesFetched]);
 
 	const table = useReactTable({
-		data: defaultData,
+		data,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		onGlobalFilterChange: setGlobalFilters,
@@ -213,39 +167,56 @@ const Stakeholders: React.FC = () => {
 					))}
 				</TableHeader>
 				<TableBody>
-					{table.getRowModel().rows?.length ? (
-						<>
-							{table.getRowModel().rows.map((row) => (
-								<TableRow
-									key={row.id}
-									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-								>
-									{row.getVisibleCells().map((cell, index) => (
-										<TableCell
-											key={cell.id}
-											className={cn({
-												"rounded-l-lg pl-5": index === 0,
-												"rounded-r-lg": index === row.getVisibleCells().length,
-											})}
-										>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext()
-											)}
+					{isGlobalEntitiesFetched ? (
+						table.getRowModel().rows?.length ? (
+							<>
+								{table.getRowModel().rows.map((row) => (
+									<TableRow
+										key={row.id}
+										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+									>
+										{row.getVisibleCells().map((cell, index) => (
+											<TableCell
+												key={cell.id}
+												className={cn({
+													"rounded-l-lg pl-5": index === 0,
+													"rounded-r-lg":
+														index === row.getVisibleCells().length,
+												})}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										))}
+										<TableCell className="rounded-r-lg ">
+											<DropdownMenuAndDialog {...row.original} />
 										</TableCell>
-									))}
-									<TableCell className="rounded-r-lg ">
-										<DropdownMenuAndDialog {...row.original} />
-									</TableCell>
-								</TableRow>
-							))}
-						</>
+									</TableRow>
+								))}
+							</>
+						) : (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="h-24 text-center"
+								>
+									No results.
+								</TableCell>
+							</TableRow>
+						)
 					) : (
-						<TableRow>
-							<TableCell colSpan={columns.length} className="h-24 text-center">
-								No results.
-							</TableCell>
-						</TableRow>
+						Array.from(new Array(4)).map((_, index) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+							<TableRow key={index}>
+								{table.getVisibleLeafColumns().map((column) => (
+									<TableCell key={column.id}>
+										<Skeleton className="w-full h-12 rounded-lg" />
+									</TableCell>
+								))}
+							</TableRow>
+						))
 					)}
 				</TableBody>
 			</Table>
@@ -255,7 +226,7 @@ const Stakeholders: React.FC = () => {
 
 export default Stakeholders;
 
-const DropdownMenuAndDialog: React.FC<Entity> = ({ regNumber, status }) => {
+const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 	const [showStatusModal, setShowStatusModal] = React.useState(false);
 	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
 
@@ -318,7 +289,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ regNumber, status }) => {
 			onSubmit: handleDeleteMedicine,
 		},
 	};
-	console.log(regNumber, "regNumber");
+	console.log(address, "address");
 
 	return (
 		<>
@@ -343,7 +314,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ regNumber, status }) => {
 
 			{/* Dialog for medicine approval */}
 			<Dialog open={showStatusModal}>
-				<DialogContent className="overflow-y-scroll max-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ">
+				<DialogContent className="w-[400px]">
 					<VisuallyHidden asChild>
 						<DialogTitle>
 							{status ? "Disapprove" : "Approve"} Medicine
@@ -371,7 +342,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ regNumber, status }) => {
 
 			{/* Dialog for deletion */}
 			<Dialog open={showDeleteModal}>
-				<DialogContent>
+				<DialogContent className="w-[400px]">
 					<VisuallyHidden asChild>
 						<DialogTitle>Delete Medicine</DialogTitle>
 					</VisuallyHidden>
