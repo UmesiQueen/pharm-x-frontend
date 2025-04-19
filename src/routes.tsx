@@ -15,7 +15,7 @@ export const router = createBrowserRouter([
 		children: [
 			{ index: true, Component: Home },
 			{
-				path: "dashboard",
+				path: "app",
 				Component: DashboardLayout,
 				children: [
 					{ path: "stakeholders", Component: Stakeholders },

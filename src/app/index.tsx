@@ -9,7 +9,7 @@ const Home: React.FC = () => {
 	const navigate = useNavigate();
 
 	React.useEffect(() => {
-		if (isConnected) navigate("/dashboard");
+		if (isConnected) navigate("/app");
 	}, [isConnected, navigate]);
 
 	const handleConnectWallet = () => {
@@ -46,12 +46,12 @@ const Home: React.FC = () => {
 				<div className="w-[954px] text-center">
 					<div className="px-5 pb-5 space-y-5">
 						<h1 className="font-acme text-7xl text-[#0D0D0D]">
-							A Trustless System for Drug Transparency & Traceability
+							A Trustless System for Drug Traceability & Transparency
 						</h1>
 						<p className="text-xl">
-							PharmXChain ensures pharmaceutical authenticity, prevents
-							counterfeits, and enhances supply chain transparency with secure
-							blockchain tracking
+							PharmXChain is a decentralized application that ensures
+							pharmaceutical authenticity, prevents counterfeits, and enhances
+							supply chain transparency with secure blockchain tracking
 						</p>
 					</div>
 					<Button onClick={handleConnectWallet}>Connect Wallet</Button>

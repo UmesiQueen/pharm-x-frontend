@@ -25,7 +25,7 @@ const PageNotFound = () => {
 						<p className="text-lg">
 							Sorry, we couldn’t find the page you’re looking for.
 						</p>
-						<Button onClick={() => navigate("/dashboard")}>
+						<Button onClick={() => navigate("/app")}>
 							<ArrowLeftSquare /> Back to home
 						</Button>
 					</div>
