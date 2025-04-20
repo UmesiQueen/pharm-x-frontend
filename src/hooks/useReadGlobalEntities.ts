@@ -20,16 +20,16 @@ const otherArgs = {
     abi: globalRegistryABI as Abi,
     address: GLOBAL_REGISTRY_ADDRESS,
     chainId: baseSepolia.id,
-    query
 }
 
-export const useGlobalEntities = () => {
+export const useReadGlobalEntities = () => {
     const {
         data: entityAddresses,
         isFetched: isEntityAddressesFetched,
         isFetching: isEntityAddressesFetching,
     }: UseReadContractReturnType = useReadContract({
         ...otherArgs,
+        query,
         functionName: "getRegisteredEntityAddresses",
     })
 

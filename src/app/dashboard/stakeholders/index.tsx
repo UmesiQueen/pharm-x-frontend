@@ -37,7 +37,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import ConfirmationModal from "@/components/modals/Confirmation";
-import { useGlobalEntities } from "@/hooks/useGlobalEntities";
+import { useReadGlobalEntities } from "@/hooks/useReadGlobalEntities";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Entity } from "@/app/dashboard/stakeholders/types";
 
@@ -92,7 +92,7 @@ const columns = [
 const Stakeholders: React.FC = () => {
 	const [data, setData] = React.useState<Entity[]>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
-	const { entityDetails, isGlobalEntitiesFetched } = useGlobalEntities();
+	const { entityDetails, isGlobalEntitiesFetched } = useReadGlobalEntities();
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
