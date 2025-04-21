@@ -40,6 +40,7 @@ import ConfirmationModal from "@/components/modals/Confirmation";
 import { useReadGlobalEntities } from "@/hooks/useReadGlobalEntities";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Entity } from "@/app/dashboard/stakeholders/types";
+import { useWriteGlobalEntities } from "@/hooks/useWriteGlobalEntities";
 
 const columnHelper = createColumnHelper<Entity>();
 
@@ -92,13 +93,14 @@ const columns = [
 const Stakeholders: React.FC = () => {
 	const [data, setData] = React.useState<Entity[]>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
-	const { entityDetails, isGlobalEntitiesFetched } = useReadGlobalEntities();
+	const { entityDetails, isGlobalEntitiesFetched, isGlobalEntitiesFetching } =
+		useReadGlobalEntities();
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (isGlobalEntitiesFetched) setData(entityDetails);
+		if (!isGlobalEntitiesFetching) setData(entityDetails);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isGlobalEntitiesFetched]);
+	}, [isGlobalEntitiesFetching]);
 
 	const table = useReactTable({
 		data,
@@ -229,6 +231,8 @@ export default Stakeholders;
 const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 	const [showStatusModal, setShowStatusModal] = React.useState(false);
 	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+	const { activateEntity, deactivateEntity, isPending } =
+		useWriteGlobalEntities();
 
 	function toggleStatusModal() {
 		setShowStatusModal(!showStatusModal);
@@ -238,28 +242,17 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 		setShowDeleteModal(!showDeleteModal);
 	}
 
-	function handleStatusState() {
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+	async function handleStatusState() {
+		try {
+			const success = await (status
+				? deactivateEntity(address)
+				: activateEntity(address));
 
-		if (status) {
-			toast.promise(promise, {
-				loading: "Completing transaction...",
-				success: () => {
-					toggleStatusModal();
-					return "Entity deactivated!";
-				},
-				error: "Error",
-			});
-		} else {
-			toast.promise(promise, {
-				loading: "Completing transaction...",
-				success: () => {
-					toggleStatusModal();
-					return "Entity activated!";
-				},
-				error: "Error",
-			});
+			if (success) {
+				toggleStatusModal();
+			}
+		} catch (err) {
+			console.error("Failed to change entity status:", err);
 		}
 	}
 
@@ -282,14 +275,15 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 			title: `${status ? "Deactivate" : "Activate"} entity`,
 			onCloseFn: toggleStatusModal,
 			onSubmit: handleStatusState,
+			isPending,
 		},
 		deleteModal: {
 			title: "Delete entity",
 			onCloseFn: toggleDeleteModal,
 			onSubmit: handleDeleteMedicine,
+			isPending,
 		},
 	};
-	console.log(address, "address");
 
 	return (
 		<>

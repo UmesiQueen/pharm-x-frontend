@@ -5,17 +5,8 @@ import type { Abi, Address } from "viem";
 import { EntityAddressFactory } from "@/lib/factories/EntityAddressFactory";
 import type { Role, Entity, EntityDetailsResults } from "@/app/dashboard/stakeholders/types";
 import { EntityDetailsFactory } from "@/lib/factories/EntityDetailsFactory";
+import { GLOBAL_REGISTRY_ADDRESS } from "@/lib/constants";
 
-const GLOBAL_REGISTRY_ADDRESS = "0x6986C15EEfA43Ff14C01bb18797d7124a95025a7" as Address;
-
-const query = {
-    // Don't refetch on window focus
-    refetchOnWindowFocus: false,
-    // Don't refetch on component mount
-    refetchOnMount: false,
-    // Keep data cached for 5 minutes
-    staleTime: 1000 * 60 * 5,
-}
 const otherArgs = {
     abi: globalRegistryABI as Abi,
     address: GLOBAL_REGISTRY_ADDRESS,
@@ -29,7 +20,6 @@ export const useReadGlobalEntities = () => {
         isFetching: isEntityAddressesFetching,
     }: UseReadContractReturnType = useReadContract({
         ...otherArgs,
-        query,
         functionName: "getRegisteredEntityAddresses",
     })
 
@@ -41,9 +31,11 @@ export const useReadGlobalEntities = () => {
         args: [address],
     }));
 
-    const { isFetched: isAllEntityDetailsFetched, data: entityDetailsResults, isFetching: isAllEntityDetailsFetching } = useReadContracts({
+    const { isFetched: isAllEntityDetailsFetched, data: entityDetailsResults, isFetching: isAllEntityDetailsFetching, queryKey: entityDetailsQueryKey } = useReadContracts({
         contracts: entityDetailsCallList,
-        query
+        query: {
+            enabled: isEntityAddressesFetched
+        }
     });
 
     type EntityDetails = {
@@ -80,7 +72,8 @@ export const useReadGlobalEntities = () => {
         entityAddresses: typedEntityAddresses,
         entityDetails,
         isGlobalEntitiesFetched,
-        isGlobalEntitiesFetching
+        isGlobalEntitiesFetching,
+        entityDetailsQueryKey,
     }
 }
 

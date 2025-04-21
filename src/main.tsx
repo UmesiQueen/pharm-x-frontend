@@ -10,7 +10,11 @@ import "./index.css";
 import { router } from "./routes.tsx";
 
 // 0. Setup queryClient
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: { staleTime: 60 * 1000 },
+	},
+});
 
 // 1. Get projectId from https://cloud.reown.com
 const projectId = "608d402c6d140731cc2e6c9fefb202e1";
