@@ -27,6 +27,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 						Cancel
 					</Button>
 					<Button
+						loading={isPending}
 						disabled={isPending}
 						type="submit"
 						className={cn("bg-[#4E46B4] hover:bg-[#4d46b497]", {
