@@ -19,54 +19,91 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useModal } from "@/components/ui/modal";
-import { toast } from "sonner";
+import { v4 as uuid } from "uuid";
+import {
+	useWriteGlobalEntities,
+	type RegisterEntity as RegisterEntityType,
+} from "@/hooks/useWriteGlobalEntities";
+import type { Address } from "viem";
 
-const formSchema = z.object({
+const FormSchema = z.object({
+	license: z
+		.string({ required_error: "Field cannot be empty" })
+		.trim()
+		.toLowerCase(),
 	name: z
 		.string({ required_error: "Field cannot be empty" })
 		.min(2, { message: "Name must contain at least 2 character(s)" })
-		.max(30, { message: "Name cannot contain more than 30 character(s)" }),
+		.max(30, { message: "Name cannot contain more than 30 character(s)" })
+		.trim()
+		.toLowerCase(),
 	location: z
 		.string({ required_error: "Field cannot be empty" })
 		.min(2, { message: "Location must contain at least 2 character(s)" })
 		.max(30, {
 			message: "Location cannot contain more than 30 character(s)",
-		}),
-	role: z.enum(["manufacturer", "supplier", "pharmacy"], {
+		})
+		.trim()
+		.toLowerCase(),
+	role: z.enum(["Manufacturer", "Supplier", "Pharmacy"], {
 		message: "Select a role",
 	}),
-	wallet: z
+	entityAddress: z
 		.string({ required_error: "Field cannot be empty" })
-		.min(2, { message: "Invalid wallet address" }),
+		.min(2, { message: "Invalid wallet address" })
+		.trim(),
 });
 
-const RegisterEntity: React.FC = () => {
-	const { closeModal } = useModal();
-	const form = useForm({
-		resolver: zodResolver(formSchema),
+type RegisterEntityProps = {
+	onCloseFn: () => void;
+};
+
+const RegisterEntity: React.FC<RegisterEntityProps> = ({ onCloseFn }) => {
+	const { registerEntity } = useWriteGlobalEntities();
+
+	const form = useForm<z.infer<typeof FormSchema>>({
+		resolver: zodResolver(FormSchema),
 		mode: "onChange",
 		defaultValues: {
-			name: "",
-			location: "",
+			license: undefined,
+			name: undefined,
+			location: undefined,
 			role: undefined,
-			wallet: "",
+			entityAddress: undefined,
 		},
 	});
 
-	const onSubmit = form.handleSubmit((formData) => {
-		console.log(formData, "formData");
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+	const onSubmit = form.handleSubmit(async (formData) => {
+		const { role, entityAddress, ...others } = formData;
+		let prefix = "NONE";
+		let entityRole = 0;
 
-		toast.promise(promise, {
-			loading: "Creating...",
-			success: () => {
-				closeModal();
-				return "New entity has been created";
-			},
-			error: "Error",
-		});
+		if (role === "Manufacturer") {
+			prefix = "MFG";
+			entityRole = 1;
+		} else if (role === "Supplier") {
+			prefix = "SUP";
+			entityRole = 2;
+		} else if (role === "Pharmacy") {
+			prefix = "PHA";
+			entityRole = 3;
+		}
+
+		const registrationNumber = `${prefix}-${uuid().slice(0, 4)}`;
+
+		const entityDetails: RegisterEntityType = {
+			registrationNumber,
+			role: entityRole,
+			entityAddress: entityAddress as Address,
+			...others,
+		};
+
+		try {
+			const result = await registerEntity(entityDetails);
+			if (result) onCloseFn();
+		} catch (err) {
+			console.error("Failed to change entity status:", err);
+		}
 	});
 
 	return (
@@ -78,6 +115,25 @@ const RegisterEntity: React.FC = () => {
 					<form onSubmit={onSubmit} className="space-y-5">
 						<FormField
 							control={form.control}
+							name="license"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>License No.</FormLabel>
+									<FormControl>
+										<Input
+											maxLength={35}
+											type="text"
+											{...field}
+											placeholder="L-123456"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
 							name="name"
 							render={({ field }) => (
 								<FormItem>
@@ -87,7 +143,7 @@ const RegisterEntity: React.FC = () => {
 											maxLength={35}
 											type="text"
 											{...field}
-											placeholder="Kelloggs"
+											placeholder="Clinique de L'Occident"
 										/>
 									</FormControl>
 									<FormMessage />
@@ -97,17 +153,12 @@ const RegisterEntity: React.FC = () => {
 
 						<FormField
 							control={form.control}
-							name="wallet"
+							name="entityAddress"
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>Wallet Address</FormLabel>
 									<FormControl>
-										<Input
-											maxLength={35}
-											type="text"
-											{...field}
-											placeholder="0x76ef3..."
-										/>
+										<Input type="text" {...field} placeholder="0x76ef3..." />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -117,34 +168,31 @@ const RegisterEntity: React.FC = () => {
 						<FormField
 							control={form.control}
 							name="role"
-							render={({ field }) => {
-								console.log(field);
-								return (
-									<FormItem>
-										<FormLabel>Role</FormLabel>
-										<Select
-											onValueChange={field.onChange}
-											defaultValue={field.value}
-										>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Select a role" />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent className="font-space-grotesk">
-												<SelectGroup>
-													<SelectItem value="manufacturer">
-														Manufacturer
-													</SelectItem>
-													<SelectItem value="supplier">Supplier</SelectItem>
-													<SelectItem value="pharmacy">Pharmacy</SelectItem>
-												</SelectGroup>
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</FormItem>
-								);
-							}}
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Role</FormLabel>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={field.value}
+									>
+										<FormControl>
+											<SelectTrigger>
+												<SelectValue placeholder="Select a role" />
+											</SelectTrigger>
+										</FormControl>
+										<SelectContent className="font-space-grotesk">
+											<SelectGroup>
+												<SelectItem value="Manufacturer">
+													Manufacturer
+												</SelectItem>
+												<SelectItem value="Supplier">Supplier</SelectItem>
+												<SelectItem value="Pharmacy">Pharmacy</SelectItem>
+											</SelectGroup>
+										</SelectContent>
+									</Select>
+									<FormMessage />
+								</FormItem>
+							)}
 						/>
 
 						<FormField
@@ -167,7 +215,7 @@ const RegisterEntity: React.FC = () => {
 						/>
 
 						<div className="flex justify-end gap-2">
-							<Button variant="outline" type="button" onClick={closeModal}>
+							<Button variant="outline" type="button" onClick={onCloseFn}>
 								Cancel
 							</Button>
 							<Button

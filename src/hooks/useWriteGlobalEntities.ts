@@ -14,15 +14,26 @@ const otherArgs = {
     chainId: baseSepolia.id,
 }
 
+export type RegisterEntity = {
+    entityAddress: Address;
+    role: number;
+    name: string;
+    location: string;
+    license: string;
+    registrationNumber: string;
+}
+
 export const useWriteGlobalEntities = () => {
     const { isSuccess, isPending, writeContractAsync } = useWriteContract();
-    const { entityDetailsQueryKey } = useReadGlobalEntities();
-    const queryClient = useQueryClient()
+    const { entityDetailsQueryKey, entityAddressesQueryKey } = useReadGlobalEntities();
+    const queryClient = useQueryClient();
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     React.useEffect(() => {
-        if (isSuccess)
+        if (isSuccess) {
+            queryClient.invalidateQueries({ queryKey: entityAddressesQueryKey });
             queryClient.invalidateQueries({ queryKey: entityDetailsQueryKey });
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSuccess])
 
@@ -64,11 +75,40 @@ export const useWriteGlobalEntities = () => {
         return txPromise;
     }
 
+    const registerEntity = async ({
+        entityAddress,
+        role,
+        name,
+        location,
+        license,
+        registrationNumber
+    }: RegisterEntity) => {
+        const txPromise = writeContractAsync({
+            ...otherArgs,
+            functionName: 'registerEntity',
+            args: [entityAddress, role, name, location, license, registrationNumber]
+        })
+
+        toast.promise(
+            txPromise,
+            {
+                loading: 'Creating entity...',
+                success: 'New entity created!',
+                error: (err) => `${(err?.message || 'Unknown error').split(".")[0]}`,
+            }
+        );
+
+        return txPromise;
+
+    }
+
+
     return {
         deactivateEntity,
         activateEntity,
         isPending,
         isSuccess,
+        registerEntity
     }
 
 }

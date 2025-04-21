@@ -18,6 +18,7 @@ export const useReadGlobalEntities = () => {
         data: entityAddresses,
         isFetched: isEntityAddressesFetched,
         isFetching: isEntityAddressesFetching,
+        queryKey: entityAddressesQueryKey
     }: UseReadContractReturnType = useReadContract({
         ...otherArgs,
         functionName: "getRegisteredEntityAddresses",
@@ -74,6 +75,7 @@ export const useReadGlobalEntities = () => {
         isGlobalEntitiesFetched,
         isGlobalEntitiesFetching,
         entityDetailsQueryKey,
+        entityAddressesQueryKey
     }
 }
 

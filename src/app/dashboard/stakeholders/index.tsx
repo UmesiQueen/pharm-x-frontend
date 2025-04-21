@@ -26,7 +26,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
 import RegisterEntity from "@/components/modals/RegisterEntity";
 import ClippableAddress from "@/components/ClippableAddress";
 import {
@@ -35,6 +34,7 @@ import {
 	DialogClose,
 	DialogDescription,
 	DialogTitle,
+	DialogTrigger,
 } from "@/components/ui/dialog";
 import ConfirmationModal from "@/components/modals/Confirmation";
 import { useReadGlobalEntities } from "@/hooks/useReadGlobalEntities";
@@ -55,11 +55,11 @@ const columns = [
 	}),
 	columnHelper.accessor("name", {
 		header: "Name",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("location", {
 		header: "Location",
-		cell: (row) => <span className="lowercase">{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("role", {
@@ -98,9 +98,11 @@ const Stakeholders: React.FC = () => {
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (!isGlobalEntitiesFetching) setData(entityDetails);
+		if (!isGlobalEntitiesFetching && isGlobalEntitiesFetched) {
+			setData(entityDetails);
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isGlobalEntitiesFetching]);
+	}, [isGlobalEntitiesFetching, isGlobalEntitiesFetched]);
 
 	const table = useReactTable({
 		data,
@@ -134,17 +136,7 @@ const Stakeholders: React.FC = () => {
 						placeholder="Search by reg.no, name or address"
 					/>
 				</Button>
-				<Modal>
-					<ModalTrigger asChild>
-						<Button variant="outline" className="h-[48px]">
-							<Plus />
-							<p> Add entity</p>
-						</Button>
-					</ModalTrigger>
-					<ModalContent>
-						<RegisterEntity />
-					</ModalContent>
-				</Modal>
+				<RegisterEntityButton />
 			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
@@ -248,8 +240,8 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 				? deactivateEntity(address)
 				: activateEntity(address));
 
-			if (success) {
-				toggleStatusModal();
+			if (success && showStatusModal) {
+				setShowStatusModal(false);
 			}
 		} catch (err) {
 			console.error("Failed to change entity status:", err);
@@ -300,7 +292,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 					<DropdownMenuItem onClick={toggleStatusModal}>
 						{status ? "Deactivate" : "Activate"} entity
 					</DropdownMenuItem>
-					<DropdownMenuItem onClick={toggleDeleteModal}>
+					<DropdownMenuItem onClick={toggleDeleteModal} disabled={true}>
 						<p className="text-red-600">Delete entity</p>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
@@ -357,5 +349,43 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 				</DialogContent>
 			</Dialog>
 		</>
+	);
+};
+
+const RegisterEntityButton: React.FC = () => {
+	const [showDialog, setShowDialog] = React.useState(false);
+
+	function toggleDialog() {
+		setShowDialog(!showDialog);
+	}
+
+	return (
+		<Dialog open={showDialog}>
+			<DialogTrigger asChild>
+				<Button variant="outline" className="h-[48px]" onClick={toggleDialog}>
+					<Plus />
+					<p> Add entity</p>
+				</Button>
+			</DialogTrigger>
+			<DialogContent>
+				<VisuallyHidden asChild>
+					<DialogTitle>Register Entity</DialogTitle>
+				</VisuallyHidden>
+				<DialogClose onClick={toggleDialog} asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="absolute top-2 right-2 z-20 "
+					>
+						<X className="h-4 w-4" />
+						<span className="sr-only">Close</span>
+					</Button>
+				</DialogClose>
+				<RegisterEntity onCloseFn={toggleDialog} />
+				<VisuallyHidden asChild>
+					<DialogDescription>Add entity</DialogDescription>
+				</VisuallyHidden>
+			</DialogContent>
+		</Dialog>
 	);
 };
