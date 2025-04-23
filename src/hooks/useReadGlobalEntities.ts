@@ -1,17 +1,10 @@
-import globalRegistryABI from "@/abis/GlobalRegistryABI.json";
 import { useReadContract, type UseReadContractReturnType, useReadContracts } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
-import type { Abi, Address } from "viem";
+import type { Address } from "viem";
 import { EntityAddressFactory } from "@/lib/factories/EntityAddressFactory";
-import type { Role, Entity, EntityDetailsResults } from "@/app/dashboard/stakeholders/types";
+import type { Entity, EntityDetailsResults } from "@/app/dashboard/stakeholders/types";
 import { EntityDetailsFactory } from "@/lib/factories/EntityDetailsFactory";
-import { GLOBAL_REGISTRY_ADDRESS } from "@/lib/constants";
+import { entityRoles, otherArgsGlobalRegistry as otherArgs } from "@/lib/constants";
 
-const otherArgs = {
-    abi: globalRegistryABI as Abi,
-    address: GLOBAL_REGISTRY_ADDRESS,
-    chainId: baseSepolia.id,
-}
 
 export const useReadGlobalEntities = () => {
     const {
@@ -45,8 +38,6 @@ export const useReadGlobalEntities = () => {
         error?: string | null;
     };
 
-    const entityRole: Role[] = ["None", "Manufacturer", "Supplier", "Pharmacy", "Regulator"];
-
     const typedEntityDetails = entityDetailsResults as EntityDetails[];
 
     const entityDetails = typedEntityDetails?.map((entityDetail, index) => {
@@ -57,7 +48,7 @@ export const useReadGlobalEntities = () => {
             location,
             regNumber,
             license,
-            role: entityRole[role],
+            role: entityRoles[role],
             status,
             registrationDate: Number(registrationDate),
             address: typedEntityAddresses[index]

@@ -1,3 +1,4 @@
+import React from "react";
 import Badge from "@mui/material/Badge";
 import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import PageTitle from "@/components/PageTitle";
@@ -10,6 +11,7 @@ import {
 	Pill,
 	Search,
 	Settings,
+	ShieldCheck,
 	UsersRound,
 } from "lucide-react";
 import WalletAvatar from "@/assets/avatar.png";
@@ -21,15 +23,30 @@ import {
 } from "@/components/ui/popover";
 import { truncateAddress } from "@/lib/utils";
 
+const appKitConnectionStatus =
+	localStorage.getItem("@appkit/connection_status") ?? "";
+const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
+
 const DashboardLayout: React.FC = () => {
 	const { open } = useAppKit();
 	const { address, isConnected } = useAppKitAccount();
+
+	React.useEffect(() => {
+		if (Object.keys(userStore).length) {
+			if (userStore.address !== address || !isConnected) {
+				localStorage.removeItem("user");
+			}
+		}
+	}, [address, isConnected]);
 
 	const handleAccountClick = () => {
 		open({ view: "Account" });
 	};
 
-	if (!isConnected) return <Navigate to="/" />;
+	const isAuthenticated =
+		appKitConnectionStatus === "connected" && Object.keys(userStore).length > 0;
+
+	if (!isAuthenticated) return <Navigate to="/" />;
 
 	return (
 		<>
@@ -54,26 +71,28 @@ const DashboardLayout: React.FC = () => {
 								<Avatar className="cursor-pointer">
 									<AvatarImage src="" alt="avatar" />
 									<AvatarFallback className="font-acme bg-[#4E46B41F] text-[#4E46B4]">
-										MR
+										{userStore.regNumber.split("-")[0]}
 									</AvatarFallback>
 								</Avatar>
 								<div>
-									<h2 className="font-medium font-acme">The MRA</h2>
-									<p className="text-sm">Regulator</p>
+									<h2 className="font-medium text-xl font-acme capitalize">
+										{userStore.name}
+									</h2>
+									<p className="text-sm"> {userStore.role}</p>
 								</div>
 							</li>
 							<li>
 								<NavMenuItem
-									slug="/dashboard"
+									slug="/app"
 									icon={<Search strokeWidth={1} />}
 									title="Search"
 								/>
 							</li>
 							<li>
 								<NavMenuItem
-									slug="batch"
-									icon={<Library strokeWidth={1} />}
-									title="Batch"
+									slug="verify"
+									icon={<ShieldCheck strokeWidth={1} />}
+									title="Verify Drug"
 								/>
 							</li>
 							<li>
@@ -81,6 +100,13 @@ const DashboardLayout: React.FC = () => {
 									slug="medicine"
 									icon={<Pill strokeWidth={1} />}
 									title="Medicine"
+								/>
+							</li>
+							<li>
+								<NavMenuItem
+									slug="batch"
+									icon={<Library strokeWidth={1} />}
+									title="Batch"
 								/>
 							</li>
 							<li>
@@ -127,7 +153,7 @@ const DashboardLayout: React.FC = () => {
 								</AvatarFallback>
 							</Avatar>
 							<p className="font-medium text-xs">
-								{truncateAddress(String(address))}
+								{truncateAddress(String(address ?? userStore?.address))}
 							</p>
 						</Button>
 					</div>
@@ -146,6 +172,7 @@ type NavMenuItemProps = {
 	slug: string;
 	icon: React.ReactNode;
 	title: string;
+	disabled?: boolean;
 };
 
 const NavMenuItem: React.FC<NavMenuItemProps> = ({ slug, icon, title }) => {

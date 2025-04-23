@@ -2,15 +2,46 @@ import React from "react";
 import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
+import { entityRoles, otherArgsGlobalRegistry } from "@/lib/constants";
+import { useReadContract } from "wagmi";
+import type {
+	Entity,
+	EntityDetailsResults,
+} from "@/app/dashboard/stakeholders/types";
+import type { Address } from "viem";
 
 const Home: React.FC = () => {
 	const { open } = useAppKit();
-	const { isConnected } = useAppKitAccount();
+	const { isConnected, address } = useAppKitAccount();
 	const navigate = useNavigate();
 
+	const { data: entityDetailsResult, isSuccess } = useReadContract({
+		...otherArgsGlobalRegistry,
+		functionName: "getEntityDetails",
+		args: [address],
+		query: { enabled: isConnected },
+	});
+
+	const typedEntityDetailsResult = entityDetailsResult as EntityDetailsResults;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (isConnected) navigate("/app");
-	}, [isConnected, navigate]);
+		if (isSuccess && entityDetailsResult) {
+			const entityDetails: Entity = {
+				name: typedEntityDetailsResult[0],
+				location: typedEntityDetailsResult[1],
+				regNumber: typedEntityDetailsResult[2],
+				license: typedEntityDetailsResult[3],
+				role: entityRoles[typedEntityDetailsResult[4]],
+				status: typedEntityDetailsResult[5],
+				registrationDate: Number(typedEntityDetailsResult[6]),
+				address: address as Address,
+			};
+			localStorage.setItem("user", JSON.stringify(entityDetails));
+			navigate("/app");
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isSuccess, entityDetailsResult]);
 
 	const handleConnectWallet = () => {
 		if (!isConnected) open({ view: "Connect" });
