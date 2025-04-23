@@ -1,12 +1,6 @@
 import React from "react";
 import { format } from "date-fns";
-import {
-	EllipsisVertical,
-	Plus,
-	Search,
-	SquareArrowOutUpRight,
-	X,
-} from "lucide-react";
+import { EllipsisVertical, Plus, Search, X } from "lucide-react";
 import {
 	flexRender,
 	getCoreRowModel,
@@ -14,8 +8,6 @@ import {
 	createColumnHelper,
 	getFilteredRowModel,
 } from "@tanstack/react-table";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { toast } from "sonner";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,9 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Modal, ModalTrigger, ModalContent } from "@/components/ui/modal";
-import RegisterMedicine from "@/components/modals/RegisterMedicine";
-import ClippableAddress from "@/components/ClippableAddress";
-import type { Medicine as MedicineType } from "@/app/dashboard/types";
+import CreateBatch from "@/components/modals/CreateBatch";
+import MedicineHistory from "@/components/modals/MedicineHistory";
 import {
 	Dialog,
 	DialogContent,
@@ -44,62 +35,77 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import ConfirmationModal from "@/components/modals/Confirmation";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import TransferOwnership from "@/components/modals/TransferOwnership";
+import type { Batch as BatchType } from "@/app/dashboard/batch/types";
 
-const defaultData: MedicineType[] = [
+const defaultData: BatchType[] = [
 	{
+		batchId: "B1-PAE01",
 		medicineId: "M-PAE01",
-		name: "Paracetamol",
-		brand: "Exzol",
-		regDate: 1743310732,
-		manufacturer: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-		manufacturerId: "MFG-201",
-		approved: true,
+		quantity: 2000,
+		remainingQuantity: 300,
+		productionDate: 1743310732,
+		expiryDate: 1743310732,
+		isActive: true,
 	},
 	{
+		batchId: "B1-PAE012",
 		medicineId: "M-PAE02",
-		name: "Panadol",
-		brand: "Exzol",
-		regDate: 1743310732,
-		manufacturer: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-		manufacturerId: "MFG-201",
-		approved: false,
+		quantity: 2000,
+		remainingQuantity: 300,
+		productionDate: 1743310732,
+		expiryDate: 1743310732,
+		isActive: false,
 	},
 ];
 
-const columnHelper = createColumnHelper<MedicineType>();
+const columnHelper = createColumnHelper<BatchType>();
 
 const columns = [
+	columnHelper.accessor("batchId", {
+		header: "Batch Id",
+		cell: (row) => <span>{row.getValue()}</span>,
+	}),
 	columnHelper.accessor("medicineId", {
-		header: "Med. Id",
+		header: "Medicine Id",
 		cell: (row) => <span>{row.getValue()}</span>,
 	}),
-	columnHelper.accessor("name", {
-		header: "Name",
-		cell: (row) => <span>{row.getValue()}</span>,
-	}),
-	columnHelper.accessor("brand", {
-		header: "Brand",
+	columnHelper.accessor("quantity", {
+		header: "Quantity",
 		cell: (row) => <span>{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
-	columnHelper.accessor("regDate", {
-		header: "Reg. Date",
+	columnHelper.accessor("remainingQuantity", {
+		header: "Remaining Qty",
+		cell: (row) => <span>{row.getValue()}</span>,
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("productionDate", {
+		header: "Prod. Date",
 		cell: (row) => {
 			const dateTime = new Date(row.getValue());
 			return <span>{format(dateTime, "PP")}</span>;
 		},
 		enableGlobalFilter: false,
 	}),
-	columnHelper.accessor("approved", {
-		header: "Approved",
+	columnHelper.accessor("expiryDate", {
+		header: "Expiry Date",
 		cell: (row) => {
-			const status = row.getValue() ? "True" : "False";
+			const dateTime = new Date(row.getValue());
+			return <span>{format(dateTime, "PP")}</span>;
+		},
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("isActive", {
+		header: "Status",
+		cell: (row) => {
+			const status = row.getValue() ? "Active" : "Inactive";
 			return (
 				<div
-					className={cn("capitalize rounded-[60px] text-center py-1 w-16", {
-						"text-[#2B8B38] bg-[#2B8B381A]": status === "True",
-						"text-red-800 bg-[#7f1d1d4d]": status === "False",
+					className={cn("capitalize rounded-[60px] text-center py-1 w-24", {
+						"text-[#2B8B38] bg-[#2B8B381A]": status === "Active",
+						"text-red-800 bg-[#7f1d1d4d]": status === "Inactive",
 					})}
 				>
 					{status}
@@ -108,19 +114,10 @@ const columns = [
 		},
 		enableGlobalFilter: false,
 	}),
-	columnHelper.accessor("manufacturer", {
-		header: "Mfg. Address",
-		cell: (row) => <ClippableAddress text={row.getValue()} />,
-		enableGlobalFilter: false,
-	}),
-	columnHelper.accessor("manufacturerId", {
-		header: "Mfg. Id",
-		cell: (row) => <span>{row.getValue()}</span>,
-		enableGlobalFilter: false,
-	}),
 ];
 
-const Medicine: React.FC = () => {
+const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
+const Batch: React.FC = () => {
 	// const [data, setData] = React.useState(defaultData);
 	const [globalFilter, setGlobalFilters] = React.useState("");
 
@@ -142,7 +139,7 @@ const Medicine: React.FC = () => {
 
 	return (
 		<>
-			<PageTitle title="Medicine" header={true} />
+			<PageTitle title="Batch" header={true} />
 			<div className="flex justify-between">
 				<Button
 					variant="outline"
@@ -153,20 +150,22 @@ const Medicine: React.FC = () => {
 						type="text"
 						onChange={handleChange}
 						className="bg-transparent w-full focus:outline-none py-1"
-						placeholder="Search by medicine id or name"
+						placeholder="Search by batch or medicine id"
 					/>
 				</Button>
-				<Modal>
-					<ModalTrigger asChild>
-						<Button variant="outline" className="h-[48px]">
-							<Plus />
-							<p> Register medicine</p>
-						</Button>
-					</ModalTrigger>
-					<ModalContent>
-						<RegisterMedicine />
-					</ModalContent>
-				</Modal>
+				{userStore.role === "Manufacturer" && (
+					<Modal>
+						<ModalTrigger asChild>
+							<Button variant="outline" className="h-[48px]">
+								<Plus />
+								<p> Create new batch</p>
+							</Button>
+						</ModalTrigger>
+						<ModalContent>
+							<CreateBatch />
+						</ModalContent>
+					</Modal>
+				)}
 			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
@@ -231,75 +230,18 @@ const Medicine: React.FC = () => {
 	);
 };
 
-export default Medicine;
+export default Batch;
 
-const DropdownMenuAndDialog: React.FC<MedicineType> = ({
-	medicineId,
-	approved,
-}) => {
-	const [showApprovalModal, setShowApprovalModal] = React.useState(false);
-	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+const DropdownMenuAndDialog: React.FC<BatchType> = (row) => {
+	const [showTransfer, setShowTransfer] = React.useState(false);
+	const [showHistory, setShowHistory] = React.useState(false);
 
-	function toggleApprovalModal() {
-		setShowApprovalModal(!showApprovalModal);
+	function toggleHistory() {
+		setShowHistory(!showHistory);
 	}
-
-	function toggleDeleteModal() {
-		setShowDeleteModal(!showDeleteModal);
+	function toggleTransfer() {
+		setShowTransfer(!showTransfer);
 	}
-
-	function handleApprovalState() {
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
-
-		if (approved) {
-			toast.promise(promise, {
-				loading: "Completing transaction...",
-				success: () => {
-					toggleApprovalModal();
-					return "Medicine disapproved!";
-				},
-				error: "Error",
-			});
-		} else {
-			toast.promise(promise, {
-				loading: "Completing transaction...",
-				success: () => {
-					toggleApprovalModal();
-					return "Medicine approved!";
-				},
-				error: "Error",
-			});
-		}
-	}
-
-	function handleDeleteMedicine() {
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
-
-		toast.promise(promise, {
-			loading: "Deleting...",
-			success: () => {
-				toggleDeleteModal();
-				return "Medicine deleted!";
-			},
-			error: "Error",
-		});
-	}
-
-	const confirmationModalValues = {
-		approvalModal: {
-			title: `${approved ? "Disapprove" : "Approve"} medicine`,
-			onCloseFn: toggleApprovalModal,
-			onSubmit: handleApprovalState,
-		},
-		deleteModal: {
-			title: "Delete medicine",
-			onCloseFn: toggleDeleteModal,
-			onSubmit: handleDeleteMedicine,
-		},
-	};
-	console.log(medicineId, "Medicine Id");
 
 	return (
 		<>
@@ -313,34 +255,22 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 					</div>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
-					<DropdownMenuItem onClick={toggleApprovalModal}>
-						{approved ? "Disapprove" : "Approve"} medicine
+					<DropdownMenuItem onClick={toggleHistory}>
+						View history
 					</DropdownMenuItem>
-					<DropdownMenuItem onClick={toggleDeleteModal}>
-						<p className="text-red-600">Delete medicine</p>
-					</DropdownMenuItem>
-					<DropdownMenuItem>
-						<div className="inline-flex w-full justify-between items-center text-blue-600">
-							<p>View on block explorer</p>
-							<SquareArrowOutUpRight
-								strokeWidth={1}
-								size={18}
-								color="#2563eb"
-							/>
-						</div>
+					<DropdownMenuItem disabled={!row?.isActive} onClick={toggleTransfer}>
+						Transfer ownership
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			{/* Dialog for medicine approval */}
-			<Dialog open={showApprovalModal}>
-				<DialogContent className="overflow-y-scroll max-h-screen [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ">
+			{/* Dialog for medicine history */}
+			<Dialog open={showHistory}>
+				<DialogContent>
 					<VisuallyHidden asChild>
-						<DialogTitle>
-							{approved ? "Disapprove" : "Approve"} Medicine
-						</DialogTitle>
+						<DialogTitle>Medicine History</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleApprovalModal} asChild>
+					<DialogClose onClick={toggleHistory} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -350,23 +280,22 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 							<span className="sr-only">Close</span>
 						</Button>
 					</DialogClose>
-					<ConfirmationModal {...confirmationModalValues.approvalModal} />
+					<MedicineHistory {...row} />
 					<VisuallyHidden asChild>
 						<DialogDescription>
-							Confirmation modal for medicine{" "}
-							{approved ? "disapproval" : "approval"}
+							Detailed life cycle of medicine
 						</DialogDescription>
 					</VisuallyHidden>
 				</DialogContent>
 			</Dialog>
 
-			{/* Dialog for deletion */}
-			<Dialog open={showDeleteModal}>
+			{/* Dialog for transfer */}
+			<Dialog open={showTransfer}>
 				<DialogContent>
 					<VisuallyHidden asChild>
-						<DialogTitle>Delete Medicine</DialogTitle>
+						<DialogTitle>Transfer Ownership</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleDeleteModal} asChild>
+					<DialogClose onClick={toggleTransfer} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -376,9 +305,11 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 							<span className="sr-only">Close</span>
 						</Button>
 					</DialogClose>
-					<ConfirmationModal {...confirmationModalValues.deleteModal} />
+					<TransferOwnership props={{ row, onCloseFn: toggleTransfer }} />
 					<VisuallyHidden asChild>
-						<DialogDescription>Delete medicine</DialogDescription>
+						<DialogDescription>
+							Transfer ownership of medicine
+						</DialogDescription>
 					</VisuallyHidden>
 				</DialogContent>
 			</Dialog>

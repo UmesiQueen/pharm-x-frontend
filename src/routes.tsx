@@ -3,10 +3,10 @@ import App from "./App";
 import Home from "@/app/index";
 import DashboardLayout from "@/app/dashboard/_layout";
 import Stakeholders from "@/app/dashboard/stakeholders/index";
-import Medicine from "@/app/dashboard/medicine";
-import Batch from "@/app/dashboard/batch";
+import Medicine from "@/app/dashboard/medicine/index";
+import Batch from "@/app/dashboard/batch/index";
 import PageNotFound from "@/app/page-not-found";
-import Search from "@/app/dashboard/search";
+import Search from "@/app/dashboard/search/index";
 
 export const router = createBrowserRouter([
 	{

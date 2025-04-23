@@ -1,7 +1,12 @@
 import React from "react";
-import { EllipsisVertical, Plus, Search, X } from "lucide-react";
-import { toast } from "sonner";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { format } from "date-fns";
+import {
+	EllipsisVertical,
+	Plus,
+	Search,
+	SquareArrowOutUpRight,
+	X,
+} from "lucide-react";
 import {
 	flexRender,
 	getCoreRowModel,
@@ -9,6 +14,9 @@ import {
 	createColumnHelper,
 	getFilteredRowModel,
 } from "@tanstack/react-table";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { toast } from "sonner";
+import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -18,7 +26,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import PageTitle from "@/components/PageTitle";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -26,56 +33,83 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import RegisterEntity from "@/components/modals/RegisterEntity";
+import RegisterMedicine from "@/components/modals/RegisterMedicine";
 import ClippableAddress from "@/components/ClippableAddress";
+import type { Medicine as MedicineType } from "./types";
 import {
 	Dialog,
+	DialogTrigger,
 	DialogContent,
 	DialogClose,
 	DialogDescription,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import ConfirmationModal from "@/components/modals/Confirmation";
-import { useReadGlobalEntities } from "@/hooks/useReadGlobalEntities";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { Entity } from "./types";
-import { useWriteGlobalEntities } from "@/hooks/useWriteGlobalEntities";
 
-const columnHelper = createColumnHelper<Entity>();
+const defaultData: MedicineType[] = [
+	{
+		medicineId: "M-PAE01",
+		serialNo: "4094-2023-001",
+		name: "Paracetamol",
+		brand: "Exzol",
+		ingredients: "magnesium stearate, cellulose, sodium benzoate, starch",
+		details: "Pain reliever and fever reducer",
+		registrationDate: 1743310732,
+		manufacturer: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
+		manufacturerId: "MFG-201",
+		approved: true,
+	},
+	{
+		medicineId: "M-PAE02",
+		serialNo: "4094-2023-002",
+		name: "Panadol",
+		brand: "Exzol",
+		ingredients: "hydroxypropyl methylcellulose, propylene glycol",
+		details: "Pain reliever and fever reducer",
+		registrationDate: 1743310732,
+		manufacturer: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
+		manufacturerId: "MFG-201",
+		approved: false,
+	},
+];
+
+const columnHelper = createColumnHelper<MedicineType>();
 
 const columns = [
-	columnHelper.accessor("regNumber", {
-		header: "Reg. No.",
-		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
+	columnHelper.accessor("medicineId", {
+		header: "Med. Id",
+		cell: (row) => <span>{row.getValue()}</span>,
 	}),
-	columnHelper.accessor("license", {
-		header: "License No.",
-		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
+	columnHelper.accessor("serialNo", {
+		header: "Serial No.",
+		cell: (row) => <span>{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("name", {
 		header: "Name",
-		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
+		cell: (row) => <span>{row.getValue()}</span>,
 	}),
-	columnHelper.accessor("location", {
-		header: "Location",
-		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
+	columnHelper.accessor("brand", {
+		header: "Brand",
+		cell: (row) => <span>{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
-	columnHelper.accessor("role", {
-		header: "Role",
-		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
-		enableGlobalFilter: false,
-	}),
-	columnHelper.accessor("status", {
-		header: "Status",
+	columnHelper.accessor("registrationDate", {
+		header: "Reg. Date",
 		cell: (row) => {
-			const status = row.getValue() ? "Active" : "Inactive";
+			const dateTime = new Date(row.getValue());
+			return <span>{format(dateTime, "PP")}</span>;
+		},
+		enableGlobalFilter: false,
+	}),
+	columnHelper.accessor("approved", {
+		header: "Approved",
+		cell: (row) => {
+			const status = row.getValue() ? "True" : "False";
 			return (
 				<div
-					className={cn("capitalize rounded-[60px] text-center py-1 w-24", {
-						"text-[#2B8B38] bg-[#2B8B381A]": status === "Active",
-						"text-red-800 bg-[#7f1d1d4d]": status === "Inactive",
+					className={cn("capitalize rounded-[60px] text-center py-1 w-16", {
+						"text-[#2B8B38] bg-[#2B8B381A]": status === "True",
+						"text-red-800 bg-[#7f1d1d4d]": status === "False",
 					})}
 				>
 					{status}
@@ -84,30 +118,20 @@ const columns = [
 		},
 		enableGlobalFilter: false,
 	}),
-	columnHelper.accessor("address", {
-		header: "Wallet Address",
+	columnHelper.accessor("manufacturer", {
+		header: "Manufacturer",
 		cell: (row) => <ClippableAddress text={row.getValue()} />,
+		enableGlobalFilter: false,
 	}),
 ];
 
 const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
-
-const Stakeholders: React.FC = () => {
-	const [data, setData] = React.useState<Entity[]>([]);
+const Medicine: React.FC = () => {
+	// const [data, setData] = React.useState(defaultData);
 	const [globalFilter, setGlobalFilters] = React.useState("");
-	const { entityDetails, isGlobalEntitiesFetched, isGlobalEntitiesFetching } =
-		useReadGlobalEntities();
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	React.useEffect(() => {
-		if (!isGlobalEntitiesFetching && isGlobalEntitiesFetched) {
-			setData(entityDetails);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isGlobalEntitiesFetching, isGlobalEntitiesFetched]);
 
 	const table = useReactTable({
-		data,
+		data: defaultData,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		onGlobalFilterChange: setGlobalFilters,
@@ -124,7 +148,7 @@ const Stakeholders: React.FC = () => {
 
 	return (
 		<>
-			<PageTitle title="Stakeholders" header={true} />
+			<PageTitle title="Medicine" header={true} />
 			<div className="flex justify-between">
 				<Button
 					variant="outline"
@@ -135,10 +159,10 @@ const Stakeholders: React.FC = () => {
 						type="text"
 						onChange={handleChange}
 						className="bg-transparent w-full focus:outline-none py-1"
-						placeholder="Search by reg.no, name or address"
+						placeholder="Search by medicine id or name"
 					/>
 				</Button>
-				{userStore.role === "Regulator" && <RegisterEntityButton />}
+				{userStore.role === "Manufacturer" && <RegisterMedicineButton />}
 			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
@@ -163,58 +187,39 @@ const Stakeholders: React.FC = () => {
 					))}
 				</TableHeader>
 				<TableBody>
-					{isGlobalEntitiesFetched ? (
-						table.getRowModel().rows?.length ? (
-							<>
-								{table.getRowModel().rows.map((row) => (
-									<TableRow
-										key={row.id}
-										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-									>
-										{row.getVisibleCells().map((cell, index) => (
-											<TableCell
-												key={cell.id}
-												className={cn({
-													"rounded-l-lg pl-5": index === 0,
-													"rounded-r-lg":
-														index === row.getVisibleCells().length,
-												})}
-											>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-										{userStore.role === "Regulator" && (
-											<TableCell className="rounded-r-lg ">
-												<DropdownMenuAndDialog {...row.original} />
-											</TableCell>
-										)}
-									</TableRow>
-								))}
-							</>
-						) : (
-							<TableRow>
-								<TableCell
-									colSpan={columns.length}
-									className="h-24 text-center"
+					{table.getRowModel().rows?.length ? (
+						<>
+							{table.getRowModel().rows.map((row) => (
+								<TableRow
+									key={row.id}
+									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
 								>
-									No results.
-								</TableCell>
-							</TableRow>
-						)
-					) : (
-						Array.from(new Array(4)).map((_, index) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-							<TableRow key={index}>
-								{table.getVisibleLeafColumns().map((column) => (
-									<TableCell key={column.id}>
-										<Skeleton className="w-full h-12 rounded-lg" />
+									{row.getVisibleCells().map((cell, index) => (
+										<TableCell
+											key={cell.id}
+											className={cn({
+												"rounded-l-lg pl-5": index === 0,
+												"rounded-r-lg": index === row.getVisibleCells().length,
+											})}
+										>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext()
+											)}
+										</TableCell>
+									))}
+									<TableCell className="rounded-r-lg ">
+										<DropdownMenuAndDialog {...row.original} />
 									</TableCell>
-								))}
-							</TableRow>
-						))
+								</TableRow>
+							))}
+						</>
+					) : (
+						<TableRow>
+							<TableCell colSpan={columns.length} className="h-24 text-center">
+								No results.
+							</TableCell>
+						</TableRow>
 					)}
 				</TableBody>
 			</Table>
@@ -222,33 +227,45 @@ const Stakeholders: React.FC = () => {
 	);
 };
 
-export default Stakeholders;
+export default Medicine;
 
-const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
-	const [showStatusModal, setShowStatusModal] = React.useState(false);
+const DropdownMenuAndDialog: React.FC<MedicineType> = ({
+	medicineId,
+	approved,
+}) => {
+	const [showApprovalModal, setShowApprovalModal] = React.useState(false);
 	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
-	const { activateEntity, deactivateEntity, isPending } =
-		useWriteGlobalEntities();
 
-	function toggleStatusModal() {
-		setShowStatusModal(!showStatusModal);
+	function toggleApprovalModal() {
+		setShowApprovalModal(!showApprovalModal);
 	}
 
 	function toggleDeleteModal() {
 		setShowDeleteModal(!showDeleteModal);
 	}
 
-	async function handleStatusState() {
-		try {
-			const success = await (status
-				? deactivateEntity(address)
-				: activateEntity(address));
+	function handleApprovalState() {
+		const promise = () =>
+			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
 
-			if (success && showStatusModal) {
-				setShowStatusModal(false);
-			}
-		} catch (err) {
-			console.error("Failed to change entity status:", err);
+		if (approved) {
+			toast.promise(promise, {
+				loading: "Completing transaction...",
+				success: () => {
+					toggleApprovalModal();
+					return "Medicine disapproved!";
+				},
+				error: "Error",
+			});
+		} else {
+			toast.promise(promise, {
+				loading: "Completing transaction...",
+				success: () => {
+					toggleApprovalModal();
+					return "Medicine approved!";
+				},
+				error: "Error",
+			});
 		}
 	}
 
@@ -260,7 +277,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 			loading: "Deleting...",
 			success: () => {
 				toggleDeleteModal();
-				return "Entity deleted!";
+				return "Medicine deleted!";
 			},
 			error: "Error",
 		});
@@ -268,18 +285,19 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 
 	const confirmationModalValues = {
 		approvalModal: {
-			title: `${status ? "Deactivate" : "Activate"} entity`,
-			onCloseFn: toggleStatusModal,
-			onSubmit: handleStatusState,
-			isPending,
+			title: `${approved ? "Disapprove" : "Approve"} medicine`,
+			onCloseFn: toggleApprovalModal,
+			onSubmit: handleApprovalState,
+			isPending: false,
 		},
 		deleteModal: {
-			title: "Delete entity",
+			title: "Delete medicine",
 			onCloseFn: toggleDeleteModal,
 			onSubmit: handleDeleteMedicine,
-			isPending,
+			isPending: false,
 		},
 	};
+	console.log(medicineId, "Medicine Id");
 
 	return (
 		<>
@@ -293,24 +311,34 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 					</div>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
-					<DropdownMenuItem onClick={toggleStatusModal}>
-						{status ? "Deactivate" : "Activate"} entity
+					<DropdownMenuItem onClick={toggleApprovalModal}>
+						{approved ? "Disapprove" : "Approve"} medicine
 					</DropdownMenuItem>
-					<DropdownMenuItem onClick={toggleDeleteModal} disabled={true}>
-						<p className="text-red-600">Delete entity</p>
+					<DropdownMenuItem onClick={toggleDeleteModal}>
+						<p className="text-red-600">Delete medicine</p>
+					</DropdownMenuItem>
+					<DropdownMenuItem>
+						<div className="inline-flex w-full justify-between items-center text-blue-600">
+							<p>View on block explorer</p>
+							<SquareArrowOutUpRight
+								strokeWidth={1}
+								size={18}
+								color="#2563eb"
+							/>
+						</div>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
 			{/* Dialog for medicine approval */}
-			<Dialog open={showStatusModal}>
+			<Dialog open={showApprovalModal}>
 				<DialogContent className="w-[400px]">
 					<VisuallyHidden asChild>
 						<DialogTitle>
-							{status ? "Disapprove" : "Approve"} Medicine
+							{approved ? "Disapprove" : "Approve"} Medicine
 						</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleStatusModal} asChild>
+					<DialogClose onClick={toggleApprovalModal} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -324,7 +352,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 					<VisuallyHidden asChild>
 						<DialogDescription>
 							Confirmation modal for medicine{" "}
-							{status ? "disapproval" : "approval"}
+							{approved ? "disapproval" : "approval"}
 						</DialogDescription>
 					</VisuallyHidden>
 				</DialogContent>
@@ -356,24 +384,21 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 	);
 };
 
-const RegisterEntityButton: React.FC = () => {
-	const [showDialog, setShowDialog] = React.useState(false);
-
-	function toggleDialog() {
-		setShowDialog(!showDialog);
-	}
+const RegisterMedicineButton = () => {
+	const [isOpen, setOpen] = React.useState(false);
+	const toggleDialog = () => setOpen(!isOpen);
 
 	return (
-		<Dialog open={showDialog}>
+		<Dialog open={isOpen}>
 			<DialogTrigger asChild>
 				<Button variant="outline" className="h-[48px]" onClick={toggleDialog}>
 					<Plus />
-					<p> Add entity</p>
+					<p> Register medicine</p>
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<VisuallyHidden asChild>
-					<DialogTitle>Register Entity</DialogTitle>
+					<DialogTitle>Register medicine</DialogTitle>
 				</VisuallyHidden>
 				<DialogClose onClick={toggleDialog} asChild>
 					<Button
@@ -385,9 +410,9 @@ const RegisterEntityButton: React.FC = () => {
 						<span className="sr-only">Close</span>
 					</Button>
 				</DialogClose>
-				<RegisterEntity onCloseFn={toggleDialog} />
+				<RegisterMedicine onCloseFn={toggleDialog} />
 				<VisuallyHidden asChild>
-					<DialogDescription>Add entity</DialogDescription>
+					<DialogDescription>Form to register new medicine</DialogDescription>
 				</VisuallyHidden>
 			</DialogContent>
 		</Dialog>

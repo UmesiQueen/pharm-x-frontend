@@ -2,7 +2,7 @@ import React from "react";
 import Badge from "@mui/material/Badge";
 import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import PageTitle from "@/components/PageTitle";
-import { Outlet, NavLink, Link, Navigate } from "react-router";
+import { Outlet, NavLink, Link, Navigate, useNavigate } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Bell,
@@ -29,15 +29,20 @@ const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 
 const DashboardLayout: React.FC = () => {
 	const { open } = useAppKit();
-	const { address, isConnected } = useAppKitAccount();
+	const { address, status } = useAppKitAccount();
+	const navigate = useNavigate();
 
 	React.useEffect(() => {
-		if (Object.keys(userStore).length) {
-			if (userStore.address !== address || !isConnected) {
+		if (status === "disconnected") navigate("/");
+	}, [status, navigate]);
+
+	React.useEffect(() => {
+		if (address && Object.keys(userStore).length) {
+			if (userStore.address !== address) {
 				localStorage.removeItem("user");
 			}
 		}
-	}, [address, isConnected]);
+	}, [address]);
 
 	const handleAccountClick = () => {
 		open({ view: "Account" });
@@ -70,7 +75,7 @@ const DashboardLayout: React.FC = () => {
 							<li className="pb-3">
 								<Avatar className="cursor-pointer">
 									<AvatarImage src="" alt="avatar" />
-									<AvatarFallback className="font-acme bg-[#4E46B41F] text-[#4E46B4]">
+									<AvatarFallback className="font-acme bg-[#4E46B41F] text-[#4E46B4] text-xs">
 										{userStore.regNumber.split("-")[0]}
 									</AvatarFallback>
 								</Avatar>
