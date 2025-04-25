@@ -1,8 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, getUnixTime } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -22,46 +21,71 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
-
-const FormSchema = z.object({
-	medicineId: z
-		.string({ required_error: "Field cannot be empty" })
-		.min(2, { message: "Invalid Medicine Id" }), // use regex pattern
-	quantity: z.number({ required_error: "Field cannot be empty" }),
-	prodDate: z.date({
-		required_error: "A date of birth is required.",
-	}),
-	expiryDate: z.date({
-		required_error: "A date of birth is required.",
-	}),
-});
+import { v4 as uuid } from "uuid";
+import { useWriteDrugRegistry } from "@/hooks/useWriteDrugRegistry";
+import type { CreateBatch as CreateBatchType } from "@/app/dashboard/batch/types";
+import { useReadMedicineDetails } from "@/hooks/useReadMedicineDetails";
 
 const CreateBatch: React.FC = () => {
 	const { closeModal } = useModal();
+	const { createBatch } = useWriteDrugRegistry();
+	const { medicineIds } = useReadMedicineDetails();
+
+	const FormSchema = z
+		.object({
+			medicineId: z
+				.string({ required_error: "This field is required" })
+				.toLowerCase()
+				.refine(
+					(val) => medicineIds.map((id) => id.toLowerCase()).includes(val),
+					{
+						message: "Medicine Id does not exist",
+					}
+				),
+			quantity: z.coerce
+				.number({
+					required_error: "This field is required",
+					invalid_type_error: "Please enter a number",
+				})
+				.positive({ message: "Please enter a quantity greater than 0" }),
+			productionDate: z.date({
+				required_error: "A production date is required",
+			}),
+			expiryDate: z.date({
+				required_error: "An expiry date is required",
+			}),
+		})
+		.refine(({ expiryDate, productionDate }) => expiryDate > productionDate, {
+			message: "Expiry date must be after production date",
+			path: ["expiryDate"],
+		});
+
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
 		mode: "onChange",
 		defaultValues: {
-			medicineId: "",
+			medicineId: undefined,
 			quantity: undefined,
-			prodDate: undefined,
+			productionDate: undefined,
 			expiryDate: undefined,
 		},
 	});
 
-	const onSubmit = form.handleSubmit((formData) => {
-		console.log(formData, "formData");
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+	const onSubmit = form.handleSubmit(async (formData) => {
+		const batchId = `B-${formData.medicineId.slice(2, 6)}${uuid().slice(0, 2)}`;
+		const batchDetails: CreateBatchType = {
+			batchId,
+			...formData,
+			productionDate: getUnixTime(formData.productionDate),
+			expiryDate: getUnixTime(formData.expiryDate),
+		};
 
-		toast.promise(promise, {
-			loading: "Creating...",
-			success: () => {
-				closeModal();
-				return "New medicine has been created";
-			},
-			error: "Error",
-		});
+		try {
+			const result = await createBatch(batchDetails);
+			if (result) closeModal();
+		} catch (err) {
+			console.error("An error occurred:", err);
+		}
 	});
 
 	return (
@@ -84,7 +108,7 @@ const CreateBatch: React.FC = () => {
 												maxLength={35}
 												type="text"
 												{...field}
-												placeholder="Paracetamol"
+												placeholder="M-PA123"
 											/>
 										</FormControl>
 										<FormMessage />
@@ -110,7 +134,7 @@ const CreateBatch: React.FC = () => {
 							{/* Production Date */}
 							<FormField
 								control={form.control}
-								name="prodDate"
+								name="productionDate"
 								render={({ field }) => (
 									<FormItem className="flex flex-col">
 										<FormLabel>Production Date</FormLabel>
@@ -139,7 +163,7 @@ const CreateBatch: React.FC = () => {
 													selected={field.value}
 													onSelect={field.onChange}
 													disabled={(date) =>
-														date > new Date() || date < new Date("1900-01-01")
+														date > new Date() || date < new Date("2025-01-01")
 													}
 													initialFocus
 												/>
@@ -181,9 +205,12 @@ const CreateBatch: React.FC = () => {
 													mode="single"
 													selected={field.value}
 													onSelect={field.onChange}
-													disabled={(date) =>
-														date > new Date() || date < new Date("1900-01-01")
-													}
+													disabled={(date) => {
+														const productionDate = form.watch("productionDate");
+														return productionDate
+															? date < new Date(productionDate)
+															: date < new Date();
+													}}
 													initialFocus
 												/>
 											</PopoverContent>

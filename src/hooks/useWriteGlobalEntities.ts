@@ -25,14 +25,14 @@ export type RegisterEntity = {
 
 export const useWriteGlobalEntities = () => {
     const { isSuccess, isPending, writeContractAsync } = useWriteContract();
-    const { entityDetailsQueryKey, entityAddressesQueryKey } = useReadGlobalEntities();
+    const { entityAddressesQueryKey } = useReadGlobalEntities();
     const queryClient = useQueryClient();
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     React.useEffect(() => {
         if (isSuccess) {
             queryClient.invalidateQueries({ queryKey: entityAddressesQueryKey });
-            queryClient.invalidateQueries({ queryKey: entityDetailsQueryKey });
+            // queryClient.invalidateQueries({ queryKey: entityDetailsQueryKey });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSuccess])

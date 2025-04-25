@@ -1,6 +1,5 @@
 import { useReadContract, type UseReadContractReturnType, useReadContracts } from "wagmi";
 import type { Address } from "viem";
-import { EntityAddressFactory } from "@/lib/factories/EntityAddressFactory";
 import type { Entity, EntityDetailsResults } from "@/app/dashboard/stakeholders/types";
 import { EntityDetailsFactory } from "@/lib/factories/EntityDetailsFactory";
 import { entityRoles, otherArgsGlobalRegistry as otherArgs } from "@/lib/constants";
@@ -10,25 +9,31 @@ export const useReadGlobalEntities = () => {
     const {
         data: entityAddresses,
         isFetched: isEntityAddressesFetched,
-        isFetching: isEntityAddressesFetching,
+        isPending: isEntityAddressesPending,
+        isLoading: isEntityAddressesLoading,
         queryKey: entityAddressesQueryKey
     }: UseReadContractReturnType = useReadContract({
         ...otherArgs,
         functionName: "getRegisteredEntityAddresses",
     })
 
-    const typedEntityAddresses = EntityAddressFactory(entityAddresses as Address[]);
+    const typedEntityAddresses = entityAddresses as Address[];
 
-    const entityDetailsCallList = typedEntityAddresses.map((address) => ({
+    const entityDetailsCallList = typedEntityAddresses?.map((address) => ({
         ...otherArgs,
         functionName: "getEntityDetails",
         args: [address],
     }));
 
-    const { isFetched: isAllEntityDetailsFetched, data: entityDetailsResults, isFetching: isAllEntityDetailsFetching, queryKey: entityDetailsQueryKey } = useReadContracts({
+    const {
+        isFetched: isAllEntityDetailsFetched,
+        data: entityDetailsResults,
+        queryKey: entityDetailsQueryKey,
+        isLoading: isEntityDetailsLoading
+    } = useReadContracts({
         contracts: entityDetailsCallList,
         query: {
-            enabled: isEntityAddressesFetched
+            enabled: !isEntityAddressesPending
         }
     });
 
@@ -40,31 +45,33 @@ export const useReadGlobalEntities = () => {
 
     const typedEntityDetails = entityDetailsResults as EntityDetails[];
 
-    const entityDetails = typedEntityDetails?.map((entityDetail, index) => {
-        const [name, location, regNumber, license, role, status, registrationDate] = EntityDetailsFactory(entityDetail?.result);
+    const entityDetails = typedEntityDetails
+        ?.filter((entityDetail) => entityDetail.result !== null)
+        ?.map((entityDetail, index) => {
+            const [name, location, regNumber, license, role, status, registrationDate] = EntityDetailsFactory(entityDetail.result);
 
-        const newEntityDetail: Entity = {
-            name,
-            location,
-            regNumber,
-            license,
-            role: entityRoles[role],
-            status,
-            registrationDate: Number(registrationDate),
-            address: typedEntityAddresses[index]
-        }
+            const newEntityDetail: Entity = {
+                name,
+                location,
+                regNumber,
+                license,
+                role: entityRoles[role],
+                status,
+                registrationDate: Number(registrationDate),
+                address: typedEntityAddresses[index]
+            }
 
-        return newEntityDetail;
-    }).reverse();
+            return newEntityDetail;
+        }).reverse();
 
     const isGlobalEntitiesFetched = isAllEntityDetailsFetched && isEntityAddressesFetched;
-    const isGlobalEntitiesFetching = isAllEntityDetailsFetching || isEntityAddressesFetching;
+    const isAllEntityDetailsLoading = isEntityAddressesLoading || isEntityDetailsLoading;
 
     return {
         entityAddresses: typedEntityAddresses,
         entityDetails,
         isGlobalEntitiesFetched,
-        isGlobalEntitiesFetching,
+        isAllEntityDetailsLoading,
         entityDetailsQueryKey,
         entityAddressesQueryKey
     }

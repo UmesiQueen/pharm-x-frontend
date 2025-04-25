@@ -4,7 +4,7 @@ import {
 	EllipsisVertical,
 	Plus,
 	Search,
-	SquareArrowOutUpRight,
+	// SquareArrowOutUpRight,
 	X,
 } from "lucide-react";
 import {
@@ -15,7 +15,6 @@ import {
 	getFilteredRowModel,
 } from "@tanstack/react-table";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { toast } from "sonner";
 import PageTitle from "@/components/PageTitle";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,52 +44,28 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import ConfirmationModal from "@/components/modals/Confirmation";
-
-const defaultData: MedicineType[] = [
-	{
-		medicineId: "M-PAE01",
-		serialNo: "4094-2023-001",
-		name: "Paracetamol",
-		brand: "Exzol",
-		ingredients: "magnesium stearate, cellulose, sodium benzoate, starch",
-		details: "Pain reliever and fever reducer",
-		registrationDate: 1743310732,
-		manufacturer: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-		manufacturerId: "MFG-201",
-		approved: true,
-	},
-	{
-		medicineId: "M-PAE02",
-		serialNo: "4094-2023-002",
-		name: "Panadol",
-		brand: "Exzol",
-		ingredients: "hydroxypropyl methylcellulose, propylene glycol",
-		details: "Pain reliever and fever reducer",
-		registrationDate: 1743310732,
-		manufacturer: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-		manufacturerId: "MFG-201",
-		approved: false,
-	},
-];
+import { useReadMedicineDetails } from "@/hooks/useReadMedicineDetails";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useWriteDrugRegistry } from "@/hooks/useWriteDrugRegistry";
 
 const columnHelper = createColumnHelper<MedicineType>();
 
 const columns = [
 	columnHelper.accessor("medicineId", {
 		header: "Med. Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("serialNo", {
 		header: "Serial No.",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("name", {
 		header: "Name",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("brand", {
 		header: "Brand",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("registrationDate", {
@@ -127,11 +102,22 @@ const columns = [
 
 const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 const Medicine: React.FC = () => {
-	// const [data, setData] = React.useState(defaultData);
+	const [data, setData] = React.useState<MedicineType[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
+	const {
+		isAllMedicineDetailsFetched,
+		isAllMedicineDetailsLoading,
+		medicineDetails,
+	} = useReadMedicineDetails();
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	React.useEffect(() => {
+		if (isAllMedicineDetailsFetched) setData(medicineDetails);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isAllMedicineDetailsFetched]);
 
 	const table = useReactTable({
-		data: defaultData,
+		data,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		onGlobalFilterChange: setGlobalFilters,
@@ -187,39 +173,56 @@ const Medicine: React.FC = () => {
 					))}
 				</TableHeader>
 				<TableBody>
-					{table.getRowModel().rows?.length ? (
-						<>
-							{table.getRowModel().rows.map((row) => (
-								<TableRow
-									key={row.id}
-									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-								>
-									{row.getVisibleCells().map((cell, index) => (
-										<TableCell
-											key={cell.id}
-											className={cn({
-												"rounded-l-lg pl-5": index === 0,
-												"rounded-r-lg": index === row.getVisibleCells().length,
-											})}
-										>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext()
-											)}
+					{!isAllMedicineDetailsLoading ? (
+						table.getRowModel().rows?.length ? (
+							<>
+								{table.getRowModel().rows.map((row) => (
+									<TableRow
+										key={row.id}
+										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+									>
+										{row.getVisibleCells().map((cell, index) => (
+											<TableCell
+												key={cell.id}
+												className={cn({
+													"rounded-l-lg pl-5": index === 0,
+													"rounded-r-lg":
+														index === row.getVisibleCells().length,
+												})}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										))}
+										<TableCell className="rounded-r-lg ">
+											<DropdownMenuAndDialog {...row.original} />
 										</TableCell>
-									))}
-									<TableCell className="rounded-r-lg ">
-										<DropdownMenuAndDialog {...row.original} />
-									</TableCell>
-								</TableRow>
-							))}
-						</>
+									</TableRow>
+								))}
+							</>
+						) : (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="h-24 text-center"
+								>
+									No results.
+								</TableCell>
+							</TableRow>
+						)
 					) : (
-						<TableRow>
-							<TableCell colSpan={columns.length} className="h-24 text-center">
-								No results.
-							</TableCell>
-						</TableRow>
+						Array.from(new Array(4)).map((_, index) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+							<TableRow key={index}>
+								{table.getVisibleLeafColumns().map((column) => (
+									<TableCell key={column.id}>
+										<Skeleton className="w-full h-12 rounded-lg" />
+									</TableCell>
+								))}
+							</TableRow>
+						))
 					)}
 				</TableBody>
 			</Table>
@@ -235,6 +238,7 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 }) => {
 	const [showApprovalModal, setShowApprovalModal] = React.useState(false);
 	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+	const { approveMedicine } = useWriteDrugRegistry();
 
 	function toggleApprovalModal() {
 		setShowApprovalModal(!showApprovalModal);
@@ -244,43 +248,18 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 		setShowDeleteModal(!showDeleteModal);
 	}
 
-	function handleApprovalState() {
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
-
-		if (approved) {
-			toast.promise(promise, {
-				loading: "Completing transaction...",
-				success: () => {
-					toggleApprovalModal();
-					return "Medicine disapproved!";
-				},
-				error: "Error",
-			});
-		} else {
-			toast.promise(promise, {
-				loading: "Completing transaction...",
-				success: () => {
-					toggleApprovalModal();
-					return "Medicine approved!";
-				},
-				error: "Error",
-			});
+	async function handleApprovalState() {
+		try {
+			// const result = await approval ? approveMedicine(medicineId) :  suspendMedicine(medicineId);
+			const result = await approveMedicine(medicineId);
+			if (result) setShowApprovalModal(false);
+		} catch (err) {
+			console.error("An error occurred:", err);
 		}
 	}
 
 	function handleDeleteMedicine() {
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
-
-		toast.promise(promise, {
-			loading: "Deleting...",
-			success: () => {
-				toggleDeleteModal();
-				return "Medicine deleted!";
-			},
-			error: "Error",
-		});
+		//do
 	}
 
 	const confirmationModalValues = {
@@ -297,7 +276,6 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 			isPending: false,
 		},
 	};
-	console.log(medicineId, "Medicine Id");
 
 	return (
 		<>
@@ -311,13 +289,15 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 					</div>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
-					<DropdownMenuItem onClick={toggleApprovalModal}>
-						{approved ? "Disapprove" : "Approve"} medicine
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={toggleDeleteModal}>
+					{userStore === "Regulator" && (
+						<DropdownMenuItem onClick={toggleApprovalModal}>
+							{approved ? "Disapprove" : "Approve"} medicine
+						</DropdownMenuItem>
+					)}
+					<DropdownMenuItem onClick={toggleDeleteModal} disabled={true}>
 						<p className="text-red-600">Delete medicine</p>
 					</DropdownMenuItem>
-					<DropdownMenuItem>
+					{/* <DropdownMenuItem>
 						<div className="inline-flex w-full justify-between items-center text-blue-600">
 							<p>View on block explorer</p>
 							<SquareArrowOutUpRight
@@ -326,7 +306,7 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 								color="#2563eb"
 							/>
 						</div>
-					</DropdownMenuItem>
+					</DropdownMenuItem> */}
 				</DropdownMenuContent>
 			</DropdownMenu>
 

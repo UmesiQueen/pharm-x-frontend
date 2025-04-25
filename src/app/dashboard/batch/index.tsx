@@ -38,38 +38,19 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import TransferOwnership from "@/components/modals/TransferOwnership";
 import type { Batch as BatchType } from "@/app/dashboard/batch/types";
-
-const defaultData: BatchType[] = [
-	{
-		batchId: "B1-PAE01",
-		medicineId: "M-PAE01",
-		quantity: 2000,
-		remainingQuantity: 300,
-		productionDate: 1743310732,
-		expiryDate: 1743310732,
-		isActive: true,
-	},
-	{
-		batchId: "B1-PAE012",
-		medicineId: "M-PAE02",
-		quantity: 2000,
-		remainingQuantity: 300,
-		productionDate: 1743310732,
-		expiryDate: 1743310732,
-		isActive: false,
-	},
-];
+import { useReadBatchDetails } from "@/hooks/useReadBatchDetails";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const columnHelper = createColumnHelper<BatchType>();
 
 const columns = [
 	columnHelper.accessor("batchId", {
 		header: "Batch Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("medicineId", {
 		header: "Medicine Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("quantity", {
 		header: "Quantity",
@@ -118,11 +99,19 @@ const columns = [
 
 const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 const Batch: React.FC = () => {
-	// const [data, setData] = React.useState(defaultData);
+	const [data, setData] = React.useState<BatchType[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
+	const { isAllBatchDetailsFetched, isAllBatchDetailsLoading, batchDetails } =
+		useReadBatchDetails();
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	React.useEffect(() => {
+		if (isAllBatchDetailsFetched) setData(batchDetails);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isAllBatchDetailsFetched]);
 
 	const table = useReactTable({
-		data: defaultData,
+		data,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		onGlobalFilterChange: setGlobalFilters,
@@ -190,39 +179,56 @@ const Batch: React.FC = () => {
 					))}
 				</TableHeader>
 				<TableBody>
-					{table.getRowModel().rows?.length ? (
-						<>
-							{table.getRowModel().rows.map((row) => (
-								<TableRow
-									key={row.id}
-									className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-								>
-									{row.getVisibleCells().map((cell, index) => (
-										<TableCell
-											key={cell.id}
-											className={cn({
-												"rounded-l-lg pl-5": index === 0,
-												"rounded-r-lg": index === row.getVisibleCells().length,
-											})}
-										>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext()
-											)}
+					{!isAllBatchDetailsLoading ? (
+						table.getRowModel().rows?.length ? (
+							<>
+								{table.getRowModel().rows.map((row) => (
+									<TableRow
+										key={row.id}
+										className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+									>
+										{row.getVisibleCells().map((cell, index) => (
+											<TableCell
+												key={cell.id}
+												className={cn({
+													"rounded-l-lg pl-5": index === 0,
+													"rounded-r-lg":
+														index === row.getVisibleCells().length,
+												})}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
+											</TableCell>
+										))}
+										<TableCell className="rounded-r-lg ">
+											<DropdownMenuAndDialog {...row.original} />
 										</TableCell>
-									))}
-									<TableCell className="rounded-r-lg ">
-										<DropdownMenuAndDialog {...row.original} />
-									</TableCell>
-								</TableRow>
-							))}
-						</>
+									</TableRow>
+								))}
+							</>
+						) : (
+							<TableRow>
+								<TableCell
+									colSpan={columns.length}
+									className="h-24 text-center"
+								>
+									No results.
+								</TableCell>
+							</TableRow>
+						)
 					) : (
-						<TableRow>
-							<TableCell colSpan={columns.length} className="h-24 text-center">
-								No results.
-							</TableCell>
-						</TableRow>
+						Array.from(new Array(4)).map((_, index) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+							<TableRow key={index}>
+								{table.getVisibleLeafColumns().map((column) => (
+									<TableCell key={column.id}>
+										<Skeleton className="w-full h-12 rounded-lg" />
+									</TableCell>
+								))}
+							</TableRow>
+						))
 					)}
 				</TableBody>
 			</Table>

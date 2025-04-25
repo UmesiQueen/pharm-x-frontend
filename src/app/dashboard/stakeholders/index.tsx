@@ -93,18 +93,16 @@ const columns = [
 const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 
 const Stakeholders: React.FC = () => {
-	const [data, setData] = React.useState<Entity[]>([]);
+	const [data, setData] = React.useState<Entity[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
-	const { entityDetails, isGlobalEntitiesFetched, isGlobalEntitiesFetching } =
+	const { entityDetails, isGlobalEntitiesFetched, isAllEntityDetailsLoading } =
 		useReadGlobalEntities();
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (!isGlobalEntitiesFetching && isGlobalEntitiesFetched) {
-			setData(entityDetails);
-		}
+		if (isGlobalEntitiesFetched) setData(entityDetails);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isGlobalEntitiesFetching, isGlobalEntitiesFetched]);
+	}, [isGlobalEntitiesFetched]);
 
 	const table = useReactTable({
 		data,
@@ -163,7 +161,7 @@ const Stakeholders: React.FC = () => {
 					))}
 				</TableHeader>
 				<TableBody>
-					{isGlobalEntitiesFetched ? (
+					{!isAllEntityDetailsLoading ? (
 						table.getRowModel().rows?.length ? (
 							<>
 								{table.getRowModel().rows.map((row) => (

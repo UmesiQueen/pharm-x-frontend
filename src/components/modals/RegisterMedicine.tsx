@@ -11,46 +11,70 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useModal } from "@/components/ui/modal";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { v4 as uuid } from "uuid";
+import { useWriteDrugRegistry } from "@/hooks/useWriteDrugRegistry";
+import type { MedicineRegister as MedicineRegisterType } from "@/app/dashboard/medicine/types";
 
-const formSchema = z.object({
+const FormSchema = z.object({
+	serialNo: z
+		.string({ required_error: "This field is required" })
+		.trim()
+		.toLowerCase(),
 	name: z
-		.string({ required_error: "Field cannot be empty" })
+		.string({ required_error: "Field cannot be blank" })
 		.min(2, { message: "Name must contain at least 2 character(s)" })
-		.max(30, { message: "Name cannot contain more than 30 character(s)" }),
+		.max(30, { message: "Name cannot contain more than 30 character(s)" })
+		.trim()
+		.toLowerCase(),
 	brand: z
-		.string({ required_error: "Field cannot be empty" })
+		.string({ required_error: "Field cannot be blank" })
 		.min(2, { message: "Brand must contain at least 2 character(s)" })
 		.max(30, {
 			message: "Brand cannot contain more than 30 character(s)",
-		}),
+		})
+		.trim()
+		.toLowerCase(),
+	ingredients: z
+		.string({ required_error: "Field cannot be blank" })
+		.min(2, { message: "Name must contain at least 2 character(s)" })
+		.max(30, { message: "Name cannot contain more than 30 character(s)" })
+		.trim()
+		.toLowerCase(),
+	details: z.string().trim().toLowerCase().optional(),
 });
 
-const RegisterMedicine: React.FC = () => {
-	const { closeModal } = useModal();
-	const form = useForm({
-		resolver: zodResolver(formSchema),
+type RegisterMedicineProps = {
+	onCloseFn: () => void;
+};
+
+const RegisterMedicine: React.FC<RegisterMedicineProps> = ({ onCloseFn }) => {
+	const { registerMedicine } = useWriteDrugRegistry();
+	const form = useForm<z.infer<typeof FormSchema>>({
+		resolver: zodResolver(FormSchema),
 		mode: "onChange",
 		defaultValues: {
-			name: "",
-			brand: "",
+			serialNo: undefined,
+			name: undefined,
+			brand: undefined,
+			ingredients: undefined,
+			details: undefined,
 		},
 	});
 
-	const onSubmit = form.handleSubmit((formData) => {
-		console.log(formData, "formData");
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+	const onSubmit = form.handleSubmit(async (formData) => {
+		const medicineId = `M-${formData.name.slice(0, 2)}${uuid().slice(0, 3)}`;
+		const medicineDetails: MedicineRegisterType = {
+			medicineId,
+			...formData,
+		};
 
-		toast.promise(promise, {
-			loading: "Creating...",
-			success: () => {
-				closeModal();
-				return "New medicine has been created";
-			},
-			error: "Error",
-		});
+		try {
+			const result = await registerMedicine(medicineDetails);
+			if (result) onCloseFn();
+		} catch (err) {
+			console.error("Failed to register medicine:", err);
+		}
 	});
 
 	return (
@@ -60,6 +84,25 @@ const RegisterMedicine: React.FC = () => {
 			<div className="px-6">
 				<Form {...form}>
 					<form onSubmit={onSubmit} className="space-y-5">
+						<FormField
+							control={form.control}
+							name="serialNo"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Serial No.</FormLabel>
+									<FormControl>
+										<Input
+											maxLength={35}
+											type="text"
+											{...field}
+											placeholder="4094-2023-002"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
 						<FormField
 							control={form.control}
 							name="name"
@@ -97,9 +140,45 @@ const RegisterMedicine: React.FC = () => {
 								</FormItem>
 							)}
 						/>
+						<FormField
+							control={form.control}
+							name="ingredients"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Ingredients</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="Sodium..."
+											className="resize-none"
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="details"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>More details</FormLabel>
+									<FormControl>
+										<Textarea
+											placeholder="More information on this medicine"
+											className="resize-none"
+											rows={3}
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
 						<div className="flex justify-end gap-2">
-							<Button variant="outline" type="button" onClick={closeModal}>
+							<Button variant="outline" type="button" onClick={onCloseFn}>
 								Cancel
 							</Button>
 							<Button
