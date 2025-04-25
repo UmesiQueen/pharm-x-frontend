@@ -20,6 +20,7 @@ const ClippableAddress = ({ text }: { text: string }) => {
 		<CopyToClipboard text={text} onCopy={onCopyText}>
 			<Button
 				variant={"link"}
+				title="Copy to clipboard"
 				className="font-normal px-0 text-inherit font-space-grotesk"
 			>
 				<p className="inline-flex gap-1 items-center">
