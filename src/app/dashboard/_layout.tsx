@@ -2,7 +2,7 @@ import React from "react";
 import Badge from "@mui/material/Badge";
 import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 import PageTitle from "@/components/PageTitle";
-import { Outlet, NavLink, Link, Navigate, useNavigate } from "react-router";
+import { Outlet, NavLink, Link, useNavigate } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Bell,
@@ -22,39 +22,49 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { truncateAddress } from "@/lib/utils";
+import type { Entity } from "@/app/dashboard/stakeholders/types";
 
-const appKitConnectionStatus =
-	localStorage.getItem("@appkit/connection_status") ?? "";
-const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
+// eslint-disable-next-line react-refresh/only-export-components
+export const global_ctx = React.createContext<{ userStore: Entity | null }>({
+	userStore: null,
+});
 
 const DashboardLayout: React.FC = () => {
 	const { open } = useAppKit();
 	const { address, status } = useAppKitAccount();
 	const navigate = useNavigate();
+	const [userStore, setUserStore] = React.useState<Entity | null>(null);
 
 	React.useEffect(() => {
-		if (status === "disconnected") navigate("/");
+		if (status === "disconnected") {
+			navigate("/");
+			localStorage.removeItem("user");
+		}
 	}, [status, navigate]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (address && Object.keys(userStore).length) {
-			if (userStore.address !== address) {
-				localStorage.removeItem("user");
-			}
+		const userStore = localStorage.getItem("user");
+		const appKitConnectionStatus = localStorage.getItem(
+			"@appkit/connection_status"
+		);
+
+		if (userStore && appKitConnectionStatus === "connected") {
+			setUserStore(JSON.parse(userStore));
+		} else {
+			navigate("/");
+			localStorage.removeItem("user");
 		}
-	}, [address]);
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleAccountClick = () => {
 		open({ view: "Account" });
 	};
 
-	const isAuthenticated =
-		appKitConnectionStatus === "connected" && Object.keys(userStore).length > 0;
-
-	if (!isAuthenticated) return <Navigate to="/" />;
-
 	return (
-		<>
+		<global_ctx.Provider value={{ userStore }}>
 			<PageTitle title="Dashboard" />
 			<div className="p-5 bg-[#F5F5F5] min-h-screen grid grid-cols-10 grid-row-12 gap-5 ">
 				<div
@@ -76,14 +86,14 @@ const DashboardLayout: React.FC = () => {
 								<Avatar className="cursor-pointer">
 									<AvatarImage src="" alt="avatar" />
 									<AvatarFallback className="font-acme bg-[#4E46B41F] text-[#4E46B4] text-xs">
-										{userStore.regNumber.split("-")[0]}
+										{userStore?.regNumber.split("-")[0]}
 									</AvatarFallback>
 								</Avatar>
 								<div>
 									<h2 className="font-medium text-xl font-acme capitalize">
-										{userStore.name}
+										{userStore?.name}
 									</h2>
-									<p className="text-sm"> {userStore.role}</p>
+									<p className="text-sm"> {userStore?.role}</p>
 								</div>
 							</li>
 							<li>
@@ -167,7 +177,7 @@ const DashboardLayout: React.FC = () => {
 					</div>
 				</div>
 			</div>
-		</>
+		</global_ctx.Provider>
 	);
 };
 

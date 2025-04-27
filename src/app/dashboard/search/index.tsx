@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import type { MedicineDetails } from "./types";
 import type { Medicine } from "@/app/dashboard/medicine/types";
 import ClippableAddress from "@/components/ClippableAddress";
+import { global_ctx } from "@/app/dashboard/_layout";
 
 const defaultInStockData: MedicineDetails[] = [
 	{
@@ -351,10 +352,10 @@ const Search: React.FC = () => {
 
 export default Search;
 
-const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 const DropdownMenuAndDialog: React.FC<MedicineDetails> = (row) => {
 	const [showDispense, setShowDispense] = React.useState(false);
 	const [showHistory, setShowHistory] = React.useState(false);
+	const { userStore } = React.useContext(global_ctx);
 
 	function toggleHistory() {
 		setShowHistory(!showHistory);
@@ -378,7 +379,7 @@ const DropdownMenuAndDialog: React.FC<MedicineDetails> = (row) => {
 					<DropdownMenuItem onClick={toggleHistory}>
 						View history
 					</DropdownMenuItem>
-					{userStore.role === "Pharmacy" && (
+					{userStore?.role === "Pharmacy" && (
 						<DropdownMenuItem onClick={toggleDispense}>
 							Dispense medicine
 						</DropdownMenuItem>

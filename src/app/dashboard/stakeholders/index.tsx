@@ -41,6 +41,7 @@ import { useReadGlobalEntities } from "@/hooks/useReadGlobalEntities";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Entity } from "./types";
 import { useWriteGlobalEntities } from "@/hooks/useWriteGlobalEntities";
+import { global_ctx } from "@/app/dashboard/_layout";
 
 const columnHelper = createColumnHelper<Entity>();
 
@@ -90,13 +91,12 @@ const columns = [
 	}),
 ];
 
-const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
-
 const Stakeholders: React.FC = () => {
 	const [data, setData] = React.useState<Entity[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
 	const { entityDetails, isGlobalEntitiesFetched, isAllEntityDetailsLoading } =
 		useReadGlobalEntities();
+	const { userStore } = React.useContext(global_ctx);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
@@ -136,7 +136,7 @@ const Stakeholders: React.FC = () => {
 						placeholder="Search by reg.no, name or address"
 					/>
 				</Button>
-				{userStore.role === "Regulator" && <RegisterEntityButton />}
+				{userStore?.role === "Regulator" && <RegisterEntityButton />}
 			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
@@ -184,7 +184,7 @@ const Stakeholders: React.FC = () => {
 												)}
 											</TableCell>
 										))}
-										{userStore.role === "Regulator" && (
+										{userStore?.role === "Regulator" && (
 											<TableCell className="rounded-r-lg ">
 												<DropdownMenuAndDialog {...row.original} />
 											</TableCell>

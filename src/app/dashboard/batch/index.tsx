@@ -40,6 +40,7 @@ import TransferOwnership from "@/components/modals/TransferOwnership";
 import type { Batch as BatchType } from "@/app/dashboard/batch/types";
 import { useReadBatchDetails } from "@/hooks/useReadBatchDetails";
 import { Skeleton } from "@/components/ui/skeleton";
+import { global_ctx } from "@/app/dashboard/_layout";
 
 const columnHelper = createColumnHelper<BatchType>();
 
@@ -97,12 +98,12 @@ const columns = [
 	}),
 ];
 
-const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 const Batch: React.FC = () => {
 	const [data, setData] = React.useState<BatchType[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
 	const { isAllBatchDetailsFetched, isAllBatchDetailsLoading, batchDetails } =
 		useReadBatchDetails();
+	const { userStore } = React.useContext(global_ctx);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
@@ -142,7 +143,7 @@ const Batch: React.FC = () => {
 						placeholder="Search by batch or medicine id"
 					/>
 				</Button>
-				{userStore.role === "Manufacturer" && (
+				{userStore?.role === "Manufacturer" && (
 					<Modal>
 						<ModalTrigger asChild>
 							<Button variant="outline" className="h-[48px]">

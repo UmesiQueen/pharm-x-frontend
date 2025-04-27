@@ -47,6 +47,7 @@ import ConfirmationModal from "@/components/modals/Confirmation";
 import { useReadMedicineDetails } from "@/hooks/useReadMedicineDetails";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWriteDrugRegistry } from "@/hooks/useWriteDrugRegistry";
+import { global_ctx } from "@/app/dashboard/_layout";
 
 const columnHelper = createColumnHelper<MedicineType>();
 
@@ -100,7 +101,6 @@ const columns = [
 	}),
 ];
 
-const userStore = JSON.parse(localStorage.getItem("user") ?? "{}");
 const Medicine: React.FC = () => {
 	const [data, setData] = React.useState<MedicineType[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
@@ -109,6 +109,7 @@ const Medicine: React.FC = () => {
 		isAllMedicineDetailsLoading,
 		medicineDetails,
 	} = useReadMedicineDetails();
+	const { userStore } = React.useContext(global_ctx);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
@@ -148,7 +149,7 @@ const Medicine: React.FC = () => {
 						placeholder="Search by medicine id or name"
 					/>
 				</Button>
-				{userStore.role === "Manufacturer" && <RegisterMedicineButton />}
+				{userStore?.role === "Manufacturer" && <RegisterMedicineButton />}
 			</div>
 			<Table className="border-separate border-spacing-y-2">
 				<TableHeader>
@@ -239,6 +240,7 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 	const [showApprovalModal, setShowApprovalModal] = React.useState(false);
 	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
 	const { approveMedicine } = useWriteDrugRegistry();
+	const { userStore } = React.useContext(global_ctx);
 
 	function toggleApprovalModal() {
 		setShowApprovalModal(!showApprovalModal);
@@ -289,7 +291,7 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 					</div>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
-					{userStore === "Regulator" && (
+					{userStore?.role === "Regulator" && (
 						<DropdownMenuItem onClick={toggleApprovalModal}>
 							{approved ? "Disapprove" : "Approve"} medicine
 						</DropdownMenuItem>
