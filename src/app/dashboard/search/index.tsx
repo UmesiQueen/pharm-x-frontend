@@ -35,139 +35,111 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MedicineHistory from "@/components/modals/MedicineHistory";
 import DispenseMedicine from "@/components/modals/DispenseMedicine";
 import { cn } from "@/lib/utils";
-import type { MedicineDetails } from "./types";
-import type { Medicine } from "@/app/dashboard/medicine/types";
+import type { MedicineDetails, MedicineHolders } from "./types";
 import ClippableAddress from "@/components/ClippableAddress";
 import { global_ctx } from "@/app/dashboard/_layout";
-
-const defaultInStockData: MedicineDetails[] = [
-	{
-		batchId: "B1-PAE01",
-		medicineId: "M-PAE01",
-		name: "Paracetamol",
-		brand: "Exzol",
-		quantity: 2000,
-		remainingQuantity: 300,
-		productionDate: 1743310732,
-		expiryDate: 1743310732,
-		isActive: true,
-	},
-	{
-		batchId: "B1-PAE012",
-		medicineId: "M-PAE02",
-		name: "Panadol",
-		brand: "Exzol",
-		quantity: 2000,
-		remainingQuantity: 300,
-		productionDate: 1743310732,
-		expiryDate: 1743310732,
-		isActive: false,
-	},
-];
+import { useReadSupplyChainRegistry } from "@/hooks/useReadSupplyChainRegistry";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useReadMedicineDetails } from "@/hooks/useReadMedicineDetails";
 
 const columnHelper = createColumnHelper<MedicineDetails>();
 
 const columns = [
 	columnHelper.accessor("medicineId", {
 		header: "Medicine Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("batchId", {
 		header: "Batch Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("name", {
 		header: "Name",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 	}),
 	columnHelper.accessor("brand", {
 		header: "Brand",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
 	columnHelper.accessor("remainingQuantity", {
 		header: "Available Stock",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span>{Number(row.getValue())}</span>,
 		enableGlobalFilter: false,
 	}),
 ];
 
-type PharmacyStock = Pick<Medicine, "name" | "brand" | "medicineId"> & {
-	batchId: string;
-	pharmacyAddress: string;
-	pharmacyName: string;
-	pharmacyLocation: string;
-	availableQuantity: number;
-};
-
-const defaultAllHoldersData: PharmacyStock[] = [
-	{
-		batchId: "B1-PAE01",
-		medicineId: "M-PAE01",
-		name: "Paracetamol",
-		brand: "Exzol",
-		pharmacyName: "Clinic A",
-		pharmacyLocation: "Location A",
-		pharmacyAddress: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-		availableQuantity: 300,
-	},
-	{
-		batchId: "B1-PAE01",
-		medicineId: "M-PAE01",
-		name: "Paracetamol",
-		brand: "Exzol",
-		pharmacyName: "Clinic B",
-		pharmacyLocation: "Location B",
-		pharmacyAddress: "0x2A3Ee8aA2E2985015dDA5841E00Db04cdf099D5b",
-		availableQuantity: 300,
-	},
-];
-
-const holdersColumnHelper = createColumnHelper<PharmacyStock>();
+const holdersColumnHelper = createColumnHelper<MedicineHolders>();
 
 const holdersColumns = [
 	holdersColumnHelper.accessor("medicineId", {
 		header: "Medicine Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
+		enableGlobalFilter: false,
 	}),
 	holdersColumnHelper.accessor("batchId", {
 		header: "Batch Id",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="uppercase">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
-	holdersColumnHelper.accessor("name", {
-		header: "Name",
-		cell: (row) => <span>{row.getValue()}</span>,
-	}),
-	holdersColumnHelper.accessor("pharmacyName", {
-		header: "Pharmacy",
-		cell: (row) => <span>{row.getValue()}</span>,
+	holdersColumnHelper.accessor("holderName", {
+		header: "Holder Name",
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
-	holdersColumnHelper.accessor("pharmacyLocation", {
+	holdersColumnHelper.accessor("holderLocation", {
 		header: "Location",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span className="capitalize">{row.getValue()}</span>,
 		enableGlobalFilter: false,
 	}),
-	holdersColumnHelper.accessor("pharmacyAddress", {
+	holdersColumnHelper.accessor("holderAddress", {
 		header: "Wallet Address",
 		cell: (row) => <ClippableAddress text={row.getValue()} />,
 		enableGlobalFilter: false,
 	}),
 	holdersColumnHelper.accessor("availableQuantity", {
 		header: "Available Stock",
-		cell: (row) => <span>{row.getValue()}</span>,
+		cell: (row) => <span>{Number(row.getValue())}</span>,
 		enableGlobalFilter: false,
 	}),
 ];
 
 const Search: React.FC = () => {
-	// const [data, setData] = React.useState(defaultInStockData);
-	const [globalFilter, setGlobalFilters] = React.useState("");
+	const [availableMedicinesData, setAvailableMedicinesData] = React.useState<
+		MedicineDetails[] | []
+	>([]);
+	const [holdersData, setHoldersData] = React.useState<MedicineHolders[] | []>(
+		[]
+	);
+	const [globalFilter, setGlobalFilters] = React.useState<string>("");
+	const [isHoldersTab, setIsHoldersTab] = React.useState(false);
+	const [medicineExists, setMedicineExists] = React.useState(true);
+	const {
+		availableMedicines,
+		isAvailableMedicinesFetched,
+		isAvailableMedicinesLoading,
+		getMedicineHolders,
+		isHoldersLoading,
+		medicineHoldersData,
+	} = useReadSupplyChainRegistry();
+	const { medicineIds } = useReadMedicineDetails();
+
+	React.useEffect(() => {
+		if (!isHoldersLoading && medicineHoldersData.length)
+			setHoldersData(medicineHoldersData);
+	}, [medicineHoldersData, isHoldersLoading]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	React.useEffect(() => {
+		if (isAvailableMedicinesFetched) {
+			setAvailableMedicinesData(availableMedicines);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isAvailableMedicinesFetched]);
 
 	const table = useReactTable({
-		data: defaultInStockData,
+		data: availableMedicinesData,
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		onGlobalFilterChange: setGlobalFilters,
@@ -178,38 +150,80 @@ const Search: React.FC = () => {
 	});
 
 	const holdersTable = useReactTable({
-		data: defaultAllHoldersData,
+		data: holdersData,
 		columns: holdersColumns,
 		getCoreRowModel: getCoreRowModel(),
-		onGlobalFilterChange: setGlobalFilters,
 		getFilteredRowModel: getFilteredRowModel(),
-		state: {
-			globalFilter,
-		},
 	});
 
 	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const { value } = event.target;
 		table.setGlobalFilter(String(value));
+		setMedicineExists(true);
+	};
+
+	const handleOnSearchClick = () => {
+		const result = medicineIds.includes(globalFilter);
+		if (result) {
+			getMedicineHolders(globalFilter);
+		} else {
+			setMedicineExists(false);
+		}
 	};
 
 	return (
 		<>
 			<PageTitle title="Search Available Stock" header={true} />
-			<Tabs defaultValue="in">
+			<Tabs
+				defaultValue="in"
+				onValueChange={(val) => {
+					setIsHoldersTab(val === "all");
+				}}
+			>
 				<div className="flex justify-between gap-2 items-center">
-					<Button
-						variant="outline"
-						className="h-[48px] w-[360px] p-3 flex items-center gap-2"
-					>
-						<SearchIcon strokeWidth={1} />
-						<input
-							type="text"
-							onChange={handleChange}
-							className="bg-transparent w-full focus:outline-none py-1"
-							placeholder="Search by medicine id or name"
-						/>
-					</Button>
+					{!isHoldersTab ? (
+						<Button
+							variant="outline"
+							className="h-[48px] w-[360px] p-3 flex items-center gap-2"
+						>
+							<SearchIcon strokeWidth={1} />
+							<input
+								type="text"
+								onChange={handleChange}
+								className="bg-transparent w-full focus:outline-none py-1"
+								placeholder="Search by medicine id or name"
+							/>
+						</Button>
+					) : (
+						<div>
+							<div className="flex gap-2 items-center">
+								<Button
+									variant="outline"
+									className="h-[48px] w-[360px] p-3 flex items-center gap-2"
+								>
+									<SearchIcon strokeWidth={1} />
+									<input
+										type="text"
+										onChange={handleChange}
+										className="bg-transparent w-full focus:outline-none py-1"
+										placeholder="Find medicine holders by medicine id"
+									/>
+								</Button>
+								<Button
+									className="h-[48px]"
+									onClick={handleOnSearchClick}
+									loading={isHoldersLoading}
+								>
+									Search
+								</Button>
+							</div>
+							{!medicineExists && (
+								<p className="text-xs text-red-800 pt-1 pl-1">
+									Medicine id "{globalFilter}" does not exist
+								</p>
+							)}
+						</div>
+					)}
 
 					<TabsList className="*:h-10">
 						<TabsTrigger value="in">In stock</TabsTrigger>
@@ -241,43 +255,56 @@ const Search: React.FC = () => {
 							))}
 						</TableHeader>
 						<TableBody>
-							{table.getRowModel().rows?.length ? (
-								<>
-									{table.getRowModel().rows.map((row) => (
-										<TableRow
-											key={row.id}
-											className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
-										>
-											{row.getVisibleCells().map((cell, index) => (
-												<TableCell
-													key={cell.id}
-													className={cn({
-														"rounded-l-lg pl-5": index === 0,
-														"rounded-r-lg":
-															index === row.getVisibleCells().length,
-													})}
-												>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext()
-													)}
+							{!isAvailableMedicinesLoading ? (
+								table.getRowModel().rows?.length ? (
+									<>
+										{table.getRowModel().rows.map((row) => (
+											<TableRow
+												key={row.id}
+												className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] "
+											>
+												{row.getVisibleCells().map((cell, index) => (
+													<TableCell
+														key={cell.id}
+														className={cn({
+															"rounded-l-lg pl-5": index === 0,
+															"rounded-r-lg":
+																index === row.getVisibleCells().length,
+														})}
+													>
+														{flexRender(
+															cell.column.columnDef.cell,
+															cell.getContext()
+														)}
+													</TableCell>
+												))}
+												<TableCell className="rounded-r-lg ">
+													<DropdownMenuAndDialog {...row.original} />
 												</TableCell>
-											))}
-											<TableCell className="rounded-r-lg ">
-												<DropdownMenuAndDialog {...row.original} />
-											</TableCell>
-										</TableRow>
-									))}
-								</>
+											</TableRow>
+										))}
+									</>
+								) : (
+									<TableRow>
+										<TableCell
+											colSpan={columns.length}
+											className="h-24 text-center"
+										>
+											No results.
+										</TableCell>
+									</TableRow>
+								)
 							) : (
-								<TableRow>
-									<TableCell
-										colSpan={columns.length}
-										className="h-24 text-center"
-									>
-										No results.
-									</TableCell>
-								</TableRow>
+								Array.from(new Array(4)).map((_, index) => (
+									// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+									<TableRow key={index}>
+										{table.getVisibleLeafColumns().map((column) => (
+											<TableCell key={column.id}>
+												<Skeleton className="w-full h-12 rounded-lg" />
+											</TableCell>
+										))}
+									</TableRow>
+								))
 							)}
 						</TableBody>
 					</Table>
@@ -307,40 +334,53 @@ const Search: React.FC = () => {
 							))}
 						</TableHeader>
 						<TableBody>
-							{holdersTable.getRowModel().rows?.length ? (
-								<>
-									{holdersTable.getRowModel().rows.map((row) => (
-										<TableRow
-											key={row.id}
-											className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] h-[51px] p-2 "
+							{!isHoldersLoading ? (
+								holdersTable.getRowModel().rows?.length ? (
+									<>
+										{holdersTable.getRowModel().rows.map((row) => (
+											<TableRow
+												key={row.id}
+												className="rounded-lg overflow-hidden bg-white hover:bg-[#4d46b412] h-[51px] p-2 "
+											>
+												{row.getVisibleCells().map((cell, index) => (
+													<TableCell
+														key={cell.id}
+														className={cn({
+															"rounded-l-lg pl-5": index === 0,
+															"rounded-r-lg":
+																index === row.getVisibleCells().length,
+														})}
+													>
+														{flexRender(
+															cell.column.columnDef.cell,
+															cell.getContext()
+														)}
+													</TableCell>
+												))}
+											</TableRow>
+										))}
+									</>
+								) : (
+									<TableRow>
+										<TableCell
+											colSpan={holdersColumns.length}
+											className="h-24 text-center"
 										>
-											{row.getVisibleCells().map((cell, index) => (
-												<TableCell
-													key={cell.id}
-													className={cn({
-														"rounded-l-lg pl-5": index === 0,
-														"rounded-r-lg":
-															index === row.getVisibleCells().length,
-													})}
-												>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext()
-													)}
-												</TableCell>
-											))}
-										</TableRow>
-									))}
-								</>
+											No results.
+										</TableCell>
+									</TableRow>
+								)
 							) : (
-								<TableRow>
-									<TableCell
-										colSpan={holdersColumns.length}
-										className="h-24 text-center"
-									>
-										No results.
-									</TableCell>
-								</TableRow>
+								Array.from(new Array(4)).map((_, index) => (
+									// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+									<TableRow key={index}>
+										{holdersTable.getVisibleLeafColumns().map((column) => (
+											<TableCell key={column.id}>
+												<Skeleton className="w-full h-12 rounded-lg" />
+											</TableCell>
+										))}
+									</TableRow>
+								))
 							)}
 						</TableBody>
 					</Table>
