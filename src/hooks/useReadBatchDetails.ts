@@ -1,6 +1,6 @@
 import { useReadContract, useReadContracts } from "wagmi";
 import { otherArgsDrugRegistry } from "@/lib/constants";
-import type { Batch, BatchDetailsResult } from "@/app/dashboard/batch/types";
+import type { Batch } from "@/app/dashboard/batch/types";
 import { BatchDetailsFactory } from "@/lib/factories/BatchDetailsFactory";
 
 export const useReadBatchDetails = () => {
@@ -19,7 +19,7 @@ export const useReadBatchDetails = () => {
 
     const batchDetailsCallList = typedBatchIds?.map((batchId) => ({
         ...otherArgsDrugRegistry,
-        functionName: "getBatchDetailsById",
+        functionName: "getBatchDetails",
         args: [batchId],
     }));
 
@@ -36,7 +36,7 @@ export const useReadBatchDetails = () => {
     });
 
     type BatchDetails = {
-        result: BatchDetailsResult;
+        result: Batch;
         status: string;
         error?: string | null;
     }
@@ -46,7 +46,7 @@ export const useReadBatchDetails = () => {
     const batchDetails = typedBatchDetails
         ?.filter((batchDetail) => batchDetail.result !== null)
         ?.map((batchDetail) => {
-            const [
+            const {
                 batchId,
                 medicineId,
                 quantity,
@@ -54,7 +54,7 @@ export const useReadBatchDetails = () => {
                 productionDate,
                 expiryDate,
                 isActive
-            ] = BatchDetailsFactory(batchDetail.result);
+            } = BatchDetailsFactory(batchDetail.result);
 
             const newBatchDetail: Batch = {
                 batchId,

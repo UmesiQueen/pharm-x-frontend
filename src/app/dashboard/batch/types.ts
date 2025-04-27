@@ -10,13 +10,3 @@ export type Batch = CreateBatch & {
     isActive: boolean;
 }
 
-export type BatchDetailsResult = [
-    string,
-    string,
-    bigint,
-    bigint,
-    bigint,
-    bigint,
-    boolean,
-]
-
