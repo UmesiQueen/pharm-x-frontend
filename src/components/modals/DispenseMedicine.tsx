@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -13,21 +12,25 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { Batch } from "@/app/dashboard/types";
+import type { Batch } from "@/app/dashboard/batch/types";
+import { useWriteSupplyChainRegistry } from "@/hooks/useWriteSupplyChainRegistry";
 
 type DispenseMedicineProps = {
 	props: { row: Batch; onCloseFn: () => void };
 };
 
+export type DispenseDetails = {
+	batchId: string;
+	quantity: number;
+	patientId: string;
+};
+
 const DispenseMedicine: React.FC<DispenseMedicineProps> = ({
 	props: { row, onCloseFn },
 }) => {
-	type FormValues = {
-		quantity: number;
-		patientId: string;
-	};
+	const { dispenseMedicine } = useWriteSupplyChainRegistry();
 
-	const formSchema = z.object({
+	const FormSchema = z.object({
 		quantity: z.coerce
 			.number({
 				required_error: "Field cannot be empty",
@@ -42,8 +45,8 @@ const DispenseMedicine: React.FC<DispenseMedicineProps> = ({
 			.min(2, { message: "Invalid patient id" }),
 	});
 
-	const form = useForm<FormValues>({
-		resolver: zodResolver(formSchema),
+	const form = useForm<z.infer<typeof FormSchema>>({
+		resolver: zodResolver(FormSchema),
 		mode: "onChange",
 		defaultValues: {
 			quantity: undefined,
@@ -51,19 +54,18 @@ const DispenseMedicine: React.FC<DispenseMedicineProps> = ({
 		},
 	});
 
-	const onSubmit = form.handleSubmit((formData) => {
-		console.log(formData, "formData");
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+	const onSubmit = form.handleSubmit(async (formData) => {
+		const dispenseDetails: DispenseDetails = {
+			batchId: row?.batchId,
+			...formData,
+		};
 
-		toast.promise(promise, {
-			loading: "Dispensing...",
-			success: () => {
-				onCloseFn();
-				return "Medicine dispensed successfully";
-			},
-			error: "Error",
-		});
+		try {
+			const result = await dispenseMedicine(dispenseDetails);
+			if (result) onCloseFn();
+		} catch (err) {
+			console.error("Failed to dispense medicine:", err);
+		}
 	});
 
 	return (
@@ -77,12 +79,12 @@ const DispenseMedicine: React.FC<DispenseMedicineProps> = ({
 					<h2 className="mb-2 px-6">Details</h2>
 					<div className="px-6 grid grid-cols-2 gap-y-2">
 						<div className="flex items-baseline gap-2 font-light">
-							<p className="text-sm text-muted-foreground">Medicine ID:</p>
+							<p className="text-sm text-muted-foreground">Batch ID:</p>
 							<p>{row?.batchId}</p>
 						</div>
 						<div className="flex items-baseline gap-2 font-light">
-							<p className="text-sm text-muted-foreground">Name:</p>
-							<p>{row?.name}</p>
+							<p className="text-sm text-muted-foreground">Medicine ID:</p>
+							<p>{row?.medicineId}</p>
 						</div>
 					</div>
 				</div>
@@ -92,6 +94,24 @@ const DispenseMedicine: React.FC<DispenseMedicineProps> = ({
 					<Form {...form}>
 						<form onSubmit={onSubmit} className="space-y-5">
 							<div className="flex gap-4 *:w-full *:flex-grow">
+								<FormField
+									control={form.control}
+									name="patientId"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Patient Id</FormLabel>
+											<FormControl>
+												<Input
+													maxLength={35}
+													type="text"
+													{...field}
+													placeholder="P-0123"
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 								<FormField
 									control={form.control}
 									name="quantity"
@@ -112,24 +132,6 @@ const DispenseMedicine: React.FC<DispenseMedicineProps> = ({
 													Max. quantity {"<"}= {row?.remainingQuantity}
 												</FormDescription>
 											)}
-										</FormItem>
-									)}
-								/>
-								<FormField
-									control={form.control}
-									name="patientId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Patient Id</FormLabel>
-											<FormControl>
-												<Input
-													maxLength={35}
-													type="text"
-													{...field}
-													placeholder="P-0123"
-												/>
-											</FormControl>
-											<FormMessage />
 										</FormItem>
 									)}
 								/>

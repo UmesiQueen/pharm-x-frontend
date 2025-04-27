@@ -1,6 +1,7 @@
 import type { Address, Abi } from "viem";
 import globalRegistryABI from "@/abis/GlobalRegistryABI.json";
 import drugRegistryABI from "@/abis/DrugRegistryABI.json"
+import supplyChainRegistryABI from "@/abis/SupplyChainRegistryABI.json"
 import { baseSepolia } from "wagmi/chains";
 import type { Role } from "@/app/dashboard/stakeholders/types";
 
@@ -20,6 +21,12 @@ const otherArgsDrugRegistry = {
     chainId: baseSepolia.id,
 }
 
+const otherArgsSupplyChainRegistry = {
+    abi: supplyChainRegistryABI as Abi,
+    address: SUPPLY_CHAIN_REGISTRY_ADDRESS,
+    chainId: baseSepolia.id,
+}
+
 const entityRoles: Role[] = ["None", "Manufacturer", "Supplier", "Pharmacy", "Regulator"];
 
 export {
@@ -28,5 +35,6 @@ export {
     entityRoles,
     DRUG_REGISTRY_ADDRESS,
     SUPPLY_CHAIN_REGISTRY_ADDRESS,
-    otherArgsDrugRegistry
+    otherArgsDrugRegistry,
+    otherArgsSupplyChainRegistry
 }

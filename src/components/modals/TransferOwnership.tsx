@@ -12,31 +12,26 @@ import {
 	FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import type { Batch } from "@/app/dashboard/types";
+import type { Batch } from "@/app/dashboard/batch/types";
+import { useWriteSupplyChainRegistry } from "@/hooks/useWriteSupplyChainRegistry";
+import type { Address } from "viem";
 
-type DispenseMedicineProps = {
+type TransferOwnershipProps = {
 	props: { row: Batch; onCloseFn: () => void };
 };
 
-const TransferOwnership: React.FC<DispenseMedicineProps> = ({
+export type TransferDetails = {
+	batchId: string;
+	entityAddress: Address;
+	quantity: number;
+};
+
+const TransferOwnership: React.FC<TransferOwnershipProps> = ({
 	props: { row, onCloseFn },
 }) => {
-	type FormValues = {
-		quantity: number;
-		role: "manufacturer" | "supplier" | "pharmacy";
-		recipient: string;
-	};
+	const { transferOwnership } = useWriteSupplyChainRegistry();
 
-	const formSchema = z.object({
+	const FormSchema = z.object({
 		quantity: z.coerce
 			.number({
 				required_error: "Field cannot be blank",
@@ -46,38 +41,36 @@ const TransferOwnership: React.FC<DispenseMedicineProps> = ({
 			.lt(row?.remainingQuantity + 1, {
 				message: `Max. quantity <= ${row?.remainingQuantity}`,
 			}),
-		role: z.enum(["manufacturer", "supplier", "pharmacy"], {
-			message: "Please select a role",
-		}),
 		recipient: z
 			.string({ required_error: "Field cannot be blank" })
 			.min(2, { message: "Invalid wallet address" }),
 	});
 
-	const form = useForm<FormValues>({
-		resolver: zodResolver(formSchema),
+	const form = useForm<z.infer<typeof FormSchema>>({
+		resolver: zodResolver(FormSchema),
 		mode: "onChange",
 		defaultValues: {
 			quantity: undefined,
-			role: undefined,
-			recipient: "",
+			recipient: undefined,
 		},
 	});
 
-	const onSubmit = form.handleSubmit((formData) => {
-		console.log(formData, "formData");
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
+	const onSubmit = form.handleSubmit(async (formData) => {
+		const { recipient, quantity } = formData;
+		const transferDetails: TransferDetails = {
+			batchId: row?.batchId,
+			entityAddress: recipient as Address,
+			quantity,
+		};
 
-		toast.promise(promise, {
-			loading: "Completing transaction...",
-			success: () => {
-				onCloseFn();
-				return "Transaction completed successfully";
-			},
-			error: "Error",
-		});
+		try {
+			const result = await transferOwnership(transferDetails);
+			if (result) onCloseFn();
+		} catch (err) {
+			console.error("Transfer failed:", err);
+		}
 	});
+
 	return (
 		<div className="font-space-grotesk">
 			<h1 className="font-semibold text-lg px-6">Transfer Medicine</h1>
@@ -105,25 +98,6 @@ const TransferOwnership: React.FC<DispenseMedicineProps> = ({
 						<form onSubmit={onSubmit} className="space-y-5">
 							<FormField
 								control={form.control}
-								name="quantity"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Quantity</FormLabel>
-										<FormControl>
-											<Input type="number" {...field} placeholder="0" min={1} />
-										</FormControl>
-										<FormMessage />
-										{form.formState.errors?.quantity?.type !== "too_big" && (
-											<FormDescription>
-												Max. quantity {"<"}= {row?.remainingQuantity}
-											</FormDescription>
-										)}
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
 								name="recipient"
 								render={({ field }) => (
 									<FormItem>
@@ -143,35 +117,21 @@ const TransferOwnership: React.FC<DispenseMedicineProps> = ({
 
 							<FormField
 								control={form.control}
-								name="role"
-								render={({ field }) => {
-									console.log(field);
-									return (
-										<FormItem>
-											<FormLabel>Role</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												defaultValue={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Select a role" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent className="font-space-grotesk">
-													<SelectGroup>
-														<SelectItem value="manufacturer">
-															Manufacturer
-														</SelectItem>
-														<SelectItem value="supplier">Supplier</SelectItem>
-														<SelectItem value="pharmacy">Pharmacy</SelectItem>
-													</SelectGroup>
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</FormItem>
-									);
-								}}
+								name="quantity"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Quantity</FormLabel>
+										<FormControl>
+											<Input type="number" {...field} placeholder="0" min={1} />
+										</FormControl>
+										<FormMessage />
+										{form.formState.errors?.quantity?.type !== "too_big" && (
+											<FormDescription>
+												Max. quantity {"<"}= {row?.remainingQuantity}
+											</FormDescription>
+										)}
+									</FormItem>
+								)}
 							/>
 
 							<div className="flex justify-end gap-2">
