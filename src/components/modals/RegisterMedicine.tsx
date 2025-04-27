@@ -65,7 +65,7 @@ const RegisterMedicine: React.FC<RegisterMedicineProps> = ({ onCloseFn }) => {
 	const onSubmit = form.handleSubmit(async (formData) => {
 		const medicineId = `M-${formData.name.slice(0, 2)}${uuid().slice(0, 3)}`;
 		const medicineDetails: MedicineRegisterType = {
-			medicineId,
+			medicineId: medicineId.toLowerCase(),
 			...formData,
 		};
 

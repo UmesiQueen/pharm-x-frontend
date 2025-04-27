@@ -74,7 +74,7 @@ const CreateBatch: React.FC = () => {
 	const onSubmit = form.handleSubmit(async (formData) => {
 		const batchId = `B-${formData.medicineId.slice(2, 6)}${uuid().slice(0, 2)}`;
 		const batchDetails: CreateBatchType = {
-			batchId,
+			batchId: batchId.toLowerCase(),
 			...formData,
 			productionDate: getUnixTime(formData.productionDate),
 			expiryDate: getUnixTime(formData.expiryDate),
