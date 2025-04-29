@@ -1,54 +1,85 @@
-# React + TypeScript + Vite
+# PharmXChain Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based frontend application for the blockchain-based Pharmaceutical Supply Chain Management System.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This frontend application provides a user-friendly interface to interact with the pharmaceutical supply chain management smart contracts. It allows stakeholders to register entities, manage medicines, track batches, and monitor the movement of drugs through the supply chain with complete transparency and security.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Stakeholder Management**: Register, view, and manage different supply chain entities
+- **Medicine Registry**: Create, approve, and track pharmaceutical products
+- **Batch Operations**: Create and monitor medicine batches with production and expiry date tracking
+- **Transfer Workflows**: Transfer medicine ownership between stakeholders 
+- **Dispensing System**: Record medicines dispensed to patients
+- **Supply Chain History**: View complete medicine history through the supply chain
+- **Authentication**: Secure wallet-based authentication
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Tech Stack
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Framework**: React with TypeScript
+- **Styling**: Tailwind CSS with ShadCN UI components
+- **Blockchain Interaction**: wagmi, viem
+- **Form Management**: react-hook-form with zod validation
+- **Notifications**: sonner toast system
+- **Routing**: react-router
+- **Data Management**: React Query
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Getting Started
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Prerequisites
+
+- Node.js v16 or later
+- npm or yarn
+- MetaMask or another Web3 wallet
+
+### Installation
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/UmesiQueen/pharm-x-frontend.git
+   cd pharm-x-chain-frontend
+   ```
+
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Start the development server
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser and navigate to `http://localhost:5173`
+
+## Connecting to the Blockchain
+
+The application connects to the Base Sepolia testnet. You'll need:
+
+1. A wallet extension like MetaMask configured for Base Sepolia
+2. Test ETH in your wallet (available from Base Sepolia faucets)
+
+## Smart Contract Interaction
+
+The frontend interacts with three main smart contracts:
+
+1. **GlobalRegistry**: Manages entity registration and verification
+2. **DrugRegistry**: Handles medicine registration, approval, and batch management
+3. **SupplyChainRegistry**: Tracks medicine transfers throughout the supply chain
+
+Contract addresses are configured in `src/lib/constants.ts`.
+
+## Role-Based Access
+
+Different dashboard features are available based on the connected wallet's role:
+
+- **Regulator**: Can approve medicines and entities
+- **Manufacturer**: Can register medicines and create batches
+- **Supplier**: Can distribute medicines to pharmacies
+- **Pharmacy**: Can dispense medicines to patients
+
+---
+
+Built with ❤️ by Queen
