@@ -1,21 +1,12 @@
 import React from "react";
-import { useReadContract } from "wagmi";
+import { useReadContract, useConfig } from "wagmi";
 import { readContract } from '@wagmi/core';
 import { otherArgsSupplyChainRegistry } from "@/lib/constants";
 import { global_ctx } from "@/app/dashboard/_layout";
 import type { MedicineDetails, MedicineHolders, MedicineHoldersResult } from "@/app/dashboard/search/types";
-import { http, createConfig } from '@wagmi/core'
-import { baseSepolia } from '@wagmi/core/chains'
-// import type { MedicineHoldersResult } from "@/app/dashboard/search/types";
-
-const config = createConfig({
-    chains: [baseSepolia],
-    transports: {
-        [baseSepolia.id]: http(),
-    },
-})
 
 export const useReadSupplyChainRegistry = () => {
+    const config = useConfig();
     const { userStore } = React.useContext(global_ctx);
     const [holdersData, setHoldersData] = React.useState<MedicineHolders[] | []>([]);
     const [isHoldersLoading, setIsHoldersLoading] = React.useState(false);
