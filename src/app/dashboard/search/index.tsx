@@ -98,7 +98,7 @@ const holdersColumns = [
 		cell: (row) => <ClippableAddress text={row.getValue()} />,
 		enableGlobalFilter: false,
 	}),
-	holdersColumnHelper.accessor("availableQuantity", {
+	holdersColumnHelper.accessor("remainingQuantity", {
 		header: "Available Stock",
 		cell: (row) => <span>{Number(row.getValue())}</span>,
 		enableGlobalFilter: false,
@@ -128,15 +128,12 @@ const Search: React.FC = () => {
 	React.useEffect(() => {
 		if (!isHoldersLoading && medicineHoldersData.length)
 			setHoldersData(medicineHoldersData);
-	}, [medicineHoldersData, isHoldersLoading]);
+	}, [isHoldersLoading, medicineHoldersData]);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (isAvailableMedicinesFetched) {
+		if (isAvailableMedicinesFetched && Array.isArray(availableMedicines))
 			setAvailableMedicinesData(availableMedicines);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isAvailableMedicinesFetched]);
+	}, [isAvailableMedicinesFetched, availableMedicines]);
 
 	const table = useReactTable({
 		data: availableMedicinesData,

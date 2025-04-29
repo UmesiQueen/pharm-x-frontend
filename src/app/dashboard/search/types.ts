@@ -8,7 +8,7 @@ export type MedicineHoldersResult = {
     holderAddress: string;
     holderName: string;
     holderLocation: string;
-    availableQuantity: number;
+    remainingQuantity: bigint;
 };
 
 export type MedicineHolders = MedicineHoldersResult & {
