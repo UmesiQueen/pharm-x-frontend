@@ -1,6 +1,10 @@
 import React from "react";
 import Badge from "@mui/material/Badge";
-import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
+import {
+	useAppKit,
+	useAppKitAccount,
+	useDisconnect,
+} from "@reown/appkit/react";
 import PageTitle from "@/components/PageTitle";
 import { Outlet, NavLink, Link, useNavigate } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,31 +35,27 @@ export const global_ctx = React.createContext<{ userStore: Entity | null }>({
 
 const DashboardLayout: React.FC = () => {
 	const { open } = useAppKit();
-	const { address, status } = useAppKitAccount();
+	const { address, status, isConnected } = useAppKitAccount();
 	const navigate = useNavigate();
+	const { disconnect } = useDisconnect();
 	const [userStore, setUserStore] = React.useState<Entity | null>(null);
 
 	React.useEffect(() => {
-		if (status === "disconnected") {
+		if (status === "disconnected" || (status === "connected" && !isConnected)) {
 			navigate("/");
 			localStorage.removeItem("user");
 		}
-	}, [status, navigate]);
+	}, [status, navigate, isConnected]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
 		const userStore = localStorage.getItem("user");
-		const appKitConnectionStatus = localStorage.getItem(
-			"@appkit/connection_status"
-		);
-
-		if (userStore && appKitConnectionStatus === "connected") {
+		if (userStore) {
 			setUserStore(JSON.parse(userStore));
 		} else {
+			disconnect();
 			navigate("/");
-			localStorage.removeItem("user");
 		}
-
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
