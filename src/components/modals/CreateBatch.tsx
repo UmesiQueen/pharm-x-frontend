@@ -1,7 +1,9 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, getUnixTime } from "date-fns";
+import { format, getUnixTime, addYears } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { v4 as uuid } from "uuid";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -19,46 +21,48 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
-import { v4 as uuid } from "uuid";
+
 import { useWriteDrugRegistry } from "@/hooks/useWriteDrugRegistry";
 import type { CreateBatch as CreateBatchType } from "@/app/dashboard/batch/types";
 import { useReadMedicineDetails } from "@/hooks/useReadMedicineDetails";
 
 const CreateBatch: React.FC = () => {
 	const { closeModal } = useModal();
-	const { createBatch } = useWriteDrugRegistry();
+	const { createBatch, isPending } = useWriteDrugRegistry();
 	const { medicineIds } = useReadMedicineDetails();
 
-	const FormSchema = z
-		.object({
-			medicineId: z
-				.string({ required_error: "This field is required" })
-				.toLowerCase()
-				.refine(
-					(val) => medicineIds.map((id) => id.toLowerCase()).includes(val),
-					{
-						message: "Medicine Id does not exist",
-					}
-				),
-			quantity: z.coerce
-				.number({
-					required_error: "This field is required",
-					invalid_type_error: "Please enter a number",
-				})
-				.positive({ message: "Please enter a quantity greater than 0" }),
-			productionDate: z.date({
-				required_error: "A production date is required",
-			}),
-			expiryDate: z.date({
-				required_error: "An expiry date is required",
-			}),
-		})
-		.refine(({ expiryDate, productionDate }) => expiryDate > productionDate, {
-			message: "Expiry date must be after production date",
-			path: ["expiryDate"],
-		});
+	const FormSchema = z.object({
+		medicineId: z
+			.string({ required_error: "This field is required" })
+			.toLowerCase()
+			.refine(
+				(val) => medicineIds.map((id) => id.toLowerCase()).includes(val),
+				{
+					message: "Medicine Id does not exist",
+				}
+			),
+		quantity: z.coerce
+			.number({
+				required_error: "This field is required",
+				invalid_type_error: "Please enter a number",
+			})
+			.positive({ message: "Please enter a quantity greater than 0" }),
+		productionDate: z.date({
+			required_error: "A production date is required",
+		}),
+		expiryDate: z.enum(["1", "2", "3", "4", "5"], {
+			message: "Select an expiry duration",
+		}),
+	});
 
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
@@ -72,20 +76,17 @@ const CreateBatch: React.FC = () => {
 	});
 
 	const onSubmit = form.handleSubmit(async (formData) => {
-		const batchId = `B-${formData.medicineId.slice(2, 6)}${uuid().slice(0, 2)}`;
+		const batchId = `B-${formData.medicineId.slice(2, 5)}${uuid().slice(0, 3)}`;
 		const batchDetails: CreateBatchType = {
 			batchId: batchId.toLowerCase(),
 			...formData,
 			productionDate: getUnixTime(formData.productionDate),
-			expiryDate: getUnixTime(formData.expiryDate),
+			expiryDate: getUnixTime(
+				addYears(new Date(formData.productionDate), Number(formData.expiryDate))
+			),
 		};
 
-		try {
-			const result = await createBatch(batchDetails);
-			if (result) closeModal();
-		} catch (err) {
-			console.error("An error occurred:", err);
-		}
+		createBatch(batchDetails, closeModal);
 	});
 
 	return (
@@ -181,40 +182,25 @@ const CreateBatch: React.FC = () => {
 								render={({ field }) => (
 									<FormItem className="flex flex-col">
 										<FormLabel>Expiry Date</FormLabel>
-										<Popover>
-											<PopoverTrigger asChild>
-												<FormControl>
-													<Button
-														variant="outline"
-														className={cn(
-															"h-10 pl-3 text-left font-normal",
-															!field.value && "text-muted-foreground"
-														)}
-													>
-														{field.value ? (
-															format(field.value, "PPP")
-														) : (
-															<span>Pick a date</span>
-														)}
-														<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-													</Button>
-												</FormControl>
-											</PopoverTrigger>
-											<PopoverContent className="w-auto p-0" align="start">
-												<Calendar
-													mode="single"
-													selected={field.value}
-													onSelect={field.onChange}
-													disabled={(date) => {
-														const productionDate = form.watch("productionDate");
-														return productionDate
-															? date < new Date(productionDate)
-															: date < new Date();
-													}}
-													initialFocus
-												/>
-											</PopoverContent>
-										</Popover>
+										<Select
+											onValueChange={field.onChange}
+											defaultValue={field.value}
+										>
+											<FormControl>
+												<SelectTrigger>
+													<SelectValue placeholder="Select duration" />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent className="font-space-grotesk">
+												<SelectGroup>
+													<SelectItem value="1">1 year</SelectItem>
+													<SelectItem value="2">2 years</SelectItem>
+													<SelectItem value="3">3 years</SelectItem>
+													<SelectItem value="4">4 years</SelectItem>
+													<SelectItem value="5">5 years</SelectItem>
+												</SelectGroup>
+											</SelectContent>
+										</Select>
 										<FormMessage />
 									</FormItem>
 								)}
@@ -228,6 +214,7 @@ const CreateBatch: React.FC = () => {
 							<Button
 								type="submit"
 								className="bg-[#4E46B4] hover:bg-[#4d46b497] "
+								loading={isPending}
 							>
 								Create
 							</Button>
