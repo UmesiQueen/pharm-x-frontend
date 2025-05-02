@@ -1,5 +1,4 @@
-// import { SquareArrowOutUpRight } from "lucide-react";
-import { format } from "date-fns";
+import { format, fromUnixTime } from "date-fns";
 import type { Batch } from "@/app/dashboard/batch/types";
 import ClippableAddress from "@/components/ClippableAddress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,7 +82,7 @@ const MedicineHistory: React.FC<Batch> = ({ batchId, medicineId }) => {
 					<div className="space-y-6 pl-8">
 						{!isLoading
 							? supplyChainEvents.map((event, index) => {
-									const dateTime = new Date(event.timestamp);
+									const dateTime = fromUnixTime(event.timestamp);
 									const keyStr = `E-${index}`;
 									return (
 										<div key={keyStr} className="relative">
@@ -103,13 +102,6 @@ const MedicineHistory: React.FC<Batch> = ({ batchId, medicineId }) => {
 													{format(dateTime, "PP")}
 												</p>
 											</div>
-											{/* <a
-										href="/"
-										className="text-sm hover:underline inline-flex gap-1 items-center  w-full  text-[#4E46B4] hover:text-[#4d46b4bc] "
-									>
-										<span>View on block explorer </span>
-										<SquareArrowOutUpRight size={14} strokeWidth={1} />
-									</a> */}
 										</div>
 									);
 							  })

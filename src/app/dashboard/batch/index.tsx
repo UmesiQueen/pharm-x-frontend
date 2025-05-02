@@ -1,5 +1,5 @@
 import React from "react";
-import { format } from "date-fns";
+import { format, fromUnixTime } from "date-fns";
 import { EllipsisVertical, Plus, Search, X } from "lucide-react";
 import {
 	flexRender,
@@ -66,7 +66,7 @@ const columns = [
 	columnHelper.accessor("productionDate", {
 		header: "Prod. Date",
 		cell: (row) => {
-			const dateTime = new Date(row.getValue());
+			const dateTime = fromUnixTime(row.getValue());
 			return <span>{format(dateTime, "PP")}</span>;
 		},
 		enableGlobalFilter: false,
@@ -74,7 +74,7 @@ const columns = [
 	columnHelper.accessor("expiryDate", {
 		header: "Expiry Date",
 		cell: (row) => {
-			const dateTime = new Date(row.getValue());
+			const dateTime = fromUnixTime(row.getValue());
 			return <span>{format(dateTime, "PP")}</span>;
 		},
 		enableGlobalFilter: false,
