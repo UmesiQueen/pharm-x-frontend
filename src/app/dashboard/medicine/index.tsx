@@ -108,14 +108,16 @@ const Medicine: React.FC = () => {
 		isAllMedicineDetailsFetched,
 		isAllMedicineDetailsLoading,
 		medicineDetails,
+		isMedicineDetailsRefetching,
 	} = useReadMedicineDetails();
 	const { userStore } = React.useContext(global_ctx);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (isAllMedicineDetailsFetched) setData(medicineDetails);
+		if (isAllMedicineDetailsFetched && !isMedicineDetailsRefetching)
+			setData(medicineDetails);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isAllMedicineDetailsFetched]);
+	}, [isAllMedicineDetailsFetched, isMedicineDetailsRefetching]);
 
 	const table = useReactTable({
 		data,
@@ -239,43 +241,38 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 }) => {
 	const [showApprovalModal, setShowApprovalModal] = React.useState(false);
 	const [showDeleteModal, setShowDeleteModal] = React.useState(false);
-	const { approveMedicine } = useWriteDrugRegistry();
+	const { approveMedicine, isPending } = useWriteDrugRegistry();
 	const { userStore } = React.useContext(global_ctx);
 
-	function toggleApprovalModal() {
-		setShowApprovalModal(!showApprovalModal);
+	function closeApprovalModal() {
+		setShowApprovalModal(false);
 	}
 
-	function toggleDeleteModal() {
-		setShowDeleteModal(!showDeleteModal);
+	function closeDeleteModal() {
+		setShowDeleteModal(false);
 	}
 
 	async function handleApprovalState() {
-		try {
-			// const result = await approval ? approveMedicine(medicineId) :  suspendMedicine(medicineId);
-			const result = await approveMedicine(medicineId);
-			if (result) setShowApprovalModal(false);
-		} catch (err) {
-			console.error("An error occurred:", err);
-		}
+		// approval ? approveMedicine(medicineId) : suspendMedicine(medicineId);
+		approveMedicine(medicineId, closeApprovalModal);
 	}
 
 	function handleDeleteMedicine() {
-		//do
+		// do stuff
 	}
 
 	const confirmationModalValues = {
 		approvalModal: {
 			title: `${approved ? "Disapprove" : "Approve"} medicine`,
-			onCloseFn: toggleApprovalModal,
+			onCloseFn: closeApprovalModal,
 			onSubmit: handleApprovalState,
-			isPending: false,
+			isPending,
 		},
 		deleteModal: {
 			title: "Delete medicine",
-			onCloseFn: toggleDeleteModal,
+			onCloseFn: closeDeleteModal,
 			onSubmit: handleDeleteMedicine,
-			isPending: false,
+			isPending,
 		},
 	};
 
@@ -292,11 +289,14 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
 					{userStore?.role === "Regulator" && (
-						<DropdownMenuItem onClick={toggleApprovalModal}>
+						<DropdownMenuItem onClick={() => setShowApprovalModal(true)}>
 							{approved ? "Disapprove" : "Approve"} medicine
 						</DropdownMenuItem>
 					)}
-					<DropdownMenuItem onClick={toggleDeleteModal} disabled={true}>
+					<DropdownMenuItem
+						onClick={() => setShowDeleteModal(true)}
+						disabled={true}
+					>
 						<p className="text-red-600">Delete medicine</p>
 					</DropdownMenuItem>
 					{/* <DropdownMenuItem>
@@ -320,7 +320,7 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 							{approved ? "Disapprove" : "Approve"} Medicine
 						</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleApprovalModal} asChild>
+					<DialogClose onClick={closeApprovalModal} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -346,7 +346,7 @@ const DropdownMenuAndDialog: React.FC<MedicineType> = ({
 					<VisuallyHidden asChild>
 						<DialogTitle>Delete Medicine</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleDeleteModal} asChild>
+					<DialogClose onClick={closeDeleteModal} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -392,7 +392,7 @@ const RegisterMedicineButton = () => {
 						<span className="sr-only">Close</span>
 					</Button>
 				</DialogClose>
-				<RegisterMedicine onCloseFn={toggleDialog} />
+				<RegisterMedicine onCloseFn={() => setOpen(false)} />
 				<VisuallyHidden asChild>
 					<DialogDescription>Form to register new medicine</DialogDescription>
 				</VisuallyHidden>

@@ -27,7 +27,8 @@ export const useReadBatchDetails = () => {
         data: batchDetailsResults,
         isFetched: isBatchDetailsFetched,
         isLoading: isBatchDetailsLoading,
-        queryKey: batchDetailsQueryKey
+        queryKey: batchDetailsQueryKey,
+        isRefetching: isBatchDetailsRefetching
     } = useReadContracts({
         contracts: batchDetailsCallList,
         query: {
@@ -78,7 +79,8 @@ export const useReadBatchDetails = () => {
         isAllBatchDetailsFetched,
         isAllBatchDetailsLoading,
         batchIds,
-        batchDetails
+        batchDetails,
+        isBatchDetailsRefetching
     }
 }
 

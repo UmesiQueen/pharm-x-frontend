@@ -1,6 +1,8 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { v4 as uuid } from "uuid";
+
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -12,7 +14,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { v4 as uuid } from "uuid";
 import { useWriteDrugRegistry } from "@/hooks/useWriteDrugRegistry";
 import type { MedicineRegister as MedicineRegisterType } from "@/app/dashboard/medicine/types";
 
@@ -49,7 +50,8 @@ type RegisterMedicineProps = {
 };
 
 const RegisterMedicine: React.FC<RegisterMedicineProps> = ({ onCloseFn }) => {
-	const { registerMedicine } = useWriteDrugRegistry();
+	const { registerMedicine, isPending } = useWriteDrugRegistry();
+
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
 		mode: "onChange",
@@ -68,13 +70,7 @@ const RegisterMedicine: React.FC<RegisterMedicineProps> = ({ onCloseFn }) => {
 			medicineId: medicineId.toLowerCase(),
 			...formData,
 		};
-
-		try {
-			const result = await registerMedicine(medicineDetails);
-			if (result) onCloseFn();
-		} catch (err) {
-			console.error("Failed to register medicine:", err);
-		}
+		registerMedicine(medicineDetails, onCloseFn);
 	});
 
 	return (
@@ -184,6 +180,7 @@ const RegisterMedicine: React.FC<RegisterMedicineProps> = ({ onCloseFn }) => {
 							<Button
 								type="submit"
 								className="bg-[#4E46B4] hover:bg-[#4d46b497] "
+								loading={isPending}
 							>
 								Create
 							</Button>
@@ -194,7 +191,5 @@ const RegisterMedicine: React.FC<RegisterMedicineProps> = ({ onCloseFn }) => {
 		</div>
 	);
 };
-
-// Name, brand, role, license
 
 export default RegisterMedicine;

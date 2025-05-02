@@ -59,7 +59,7 @@ type RegisterEntityProps = {
 };
 
 const RegisterEntity: React.FC<RegisterEntityProps> = ({ onCloseFn }) => {
-	const { registerEntity } = useWriteGlobalEntities();
+	const { registerEntity, isPending } = useWriteGlobalEntities();
 
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
@@ -98,12 +98,7 @@ const RegisterEntity: React.FC<RegisterEntityProps> = ({ onCloseFn }) => {
 			...others,
 		};
 
-		try {
-			const result = await registerEntity(entityDetails);
-			if (result) onCloseFn();
-		} catch (err) {
-			console.error("Failed to change entity status:", err);
-		}
+		registerEntity(entityDetails, onCloseFn);
 	});
 
 	return (
@@ -221,6 +216,7 @@ const RegisterEntity: React.FC<RegisterEntityProps> = ({ onCloseFn }) => {
 							<Button
 								type="submit"
 								className="bg-[#4E46B4] hover:bg-[#4d46b497] "
+								loading={isPending}
 							>
 								Create
 							</Button>
@@ -231,7 +227,5 @@ const RegisterEntity: React.FC<RegisterEntityProps> = ({ onCloseFn }) => {
 		</div>
 	);
 };
-
-// Name, location, role, license
 
 export default RegisterEntity;

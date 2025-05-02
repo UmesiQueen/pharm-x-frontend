@@ -27,7 +27,8 @@ export const useReadMedicineDetails = () => {
         data: medicineDetailsResults,
         isFetched: isMedicineDetailsFetched,
         queryKey: medicineDetailsQueryKey,
-        isLoading: isMedicineDetailsLoading
+        isLoading: isMedicineDetailsLoading,
+        isRefetching: isMedicineDetailsRefetching
     } = useReadContracts({
         contracts: medicineDetailsCallList,
         query: {
@@ -84,7 +85,8 @@ export const useReadMedicineDetails = () => {
         isAllMedicineDetailsFetched,
         isAllMedicineDetailsLoading,
         medicineIds: typedRegisteredMedicines,
-        medicineDetails
+        medicineDetails,
+        isMedicineDetailsRefetching
     }
 }
 

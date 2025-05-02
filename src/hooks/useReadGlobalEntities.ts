@@ -29,7 +29,8 @@ export const useReadGlobalEntities = () => {
         isFetched: isAllEntityDetailsFetched,
         data: entityDetailsResults,
         queryKey: entityDetailsQueryKey,
-        isLoading: isEntityDetailsLoading
+        isLoading: isEntityDetailsLoading,
+        isRefetching: isEntityDetailsRefetching
     } = useReadContracts({
         contracts: entityDetailsCallList,
         query: {
@@ -73,7 +74,8 @@ export const useReadGlobalEntities = () => {
         isGlobalEntitiesFetched,
         isAllEntityDetailsLoading,
         entityDetailsQueryKey,
-        entityAddressesQueryKey
+        entityAddressesQueryKey,
+        isEntityDetailsRefetching
     }
 }
 

@@ -1,6 +1,5 @@
 import React from "react";
 import { EllipsisVertical, Plus, Search, X } from "lucide-react";
-import { toast } from "sonner";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
 	flexRender,
@@ -94,15 +93,20 @@ const columns = [
 const Stakeholders: React.FC = () => {
 	const [data, setData] = React.useState<Entity[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
-	const { entityDetails, isGlobalEntitiesFetched, isAllEntityDetailsLoading } =
-		useReadGlobalEntities();
+	const {
+		entityDetails,
+		isGlobalEntitiesFetched,
+		isAllEntityDetailsLoading,
+		isEntityDetailsRefetching,
+	} = useReadGlobalEntities();
 	const { userStore } = React.useContext(global_ctx);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (isGlobalEntitiesFetched) setData(entityDetails);
+		if (isGlobalEntitiesFetched && !isEntityDetailsRefetching)
+			setData(entityDetails);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isGlobalEntitiesFetched]);
+	}, [isGlobalEntitiesFetched, isEntityDetailsRefetching]);
 
 	const table = useReactTable({
 		data,
@@ -228,52 +232,33 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 	const { activateEntity, deactivateEntity, isPending } =
 		useWriteGlobalEntities();
 
-	function toggleStatusModal() {
-		setShowStatusModal(!showStatusModal);
+	function closeStatusModal() {
+		setShowStatusModal(false);
 	}
 
-	function toggleDeleteModal() {
-		setShowDeleteModal(!showDeleteModal);
+	function closeDeleteModal() {
+		setShowDeleteModal(false);
 	}
 
-	async function handleStatusState() {
-		try {
-			const success = await (status
-				? deactivateEntity(address)
-				: activateEntity(address));
-
-			if (success && showStatusModal) {
-				setShowStatusModal(false);
-			}
-		} catch (err) {
-			console.error("Failed to change entity status:", err);
-		}
+	function handleStatusState() {
+		if (status) deactivateEntity(address, closeStatusModal);
+		else activateEntity(address, closeStatusModal);
 	}
 
 	function handleDeleteMedicine() {
-		const promise = () =>
-			new Promise((resolve) => setTimeout(() => resolve({}), 2000));
-
-		toast.promise(promise, {
-			loading: "Deleting...",
-			success: () => {
-				toggleDeleteModal();
-				return "Entity deleted!";
-			},
-			error: "Error",
-		});
+		// do stuff
 	}
 
 	const confirmationModalValues = {
 		approvalModal: {
 			title: `${status ? "Deactivate" : "Activate"} entity`,
-			onCloseFn: toggleStatusModal,
+			onCloseFn: closeStatusModal,
 			onSubmit: handleStatusState,
 			isPending,
 		},
 		deleteModal: {
 			title: "Delete entity",
-			onCloseFn: toggleDeleteModal,
+			onCloseFn: closeDeleteModal,
 			onSubmit: handleDeleteMedicine,
 			isPending,
 		},
@@ -291,10 +276,13 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 					</div>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className=" w-56 p-2 space-y-1">
-					<DropdownMenuItem onClick={toggleStatusModal}>
+					<DropdownMenuItem onClick={() => setShowStatusModal(true)}>
 						{status ? "Deactivate" : "Activate"} entity
 					</DropdownMenuItem>
-					<DropdownMenuItem onClick={toggleDeleteModal} disabled={true}>
+					<DropdownMenuItem
+						onClick={() => setShowDeleteModal(true)}
+						disabled={true}
+					>
 						<p className="text-red-600">Delete entity</p>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
@@ -308,7 +296,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 							{status ? "Disapprove" : "Approve"} Medicine
 						</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleStatusModal} asChild>
+					<DialogClose onClick={closeStatusModal} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -334,7 +322,7 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 					<VisuallyHidden asChild>
 						<DialogTitle>Delete Medicine</DialogTitle>
 					</VisuallyHidden>
-					<DialogClose onClick={toggleDeleteModal} asChild>
+					<DialogClose onClick={closeDeleteModal} asChild>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -357,14 +345,18 @@ const DropdownMenuAndDialog: React.FC<Entity> = ({ address, status }) => {
 const RegisterEntityButton: React.FC = () => {
 	const [showDialog, setShowDialog] = React.useState(false);
 
-	function toggleDialog() {
-		setShowDialog(!showDialog);
+	function closeDialog() {
+		setShowDialog(false);
 	}
 
 	return (
 		<Dialog open={showDialog}>
 			<DialogTrigger asChild>
-				<Button variant="outline" className="h-[48px]" onClick={toggleDialog}>
+				<Button
+					variant="outline"
+					className="h-[48px]"
+					onClick={() => setShowDialog(true)}
+				>
 					<Plus />
 					<p> Add entity</p>
 				</Button>
@@ -373,7 +365,7 @@ const RegisterEntityButton: React.FC = () => {
 				<VisuallyHidden asChild>
 					<DialogTitle>Register Entity</DialogTitle>
 				</VisuallyHidden>
-				<DialogClose onClick={toggleDialog} asChild>
+				<DialogClose onClick={closeDialog} asChild>
 					<Button
 						variant="ghost"
 						size="icon"
@@ -383,7 +375,7 @@ const RegisterEntityButton: React.FC = () => {
 						<span className="sr-only">Close</span>
 					</Button>
 				</DialogClose>
-				<RegisterEntity onCloseFn={toggleDialog} />
+				<RegisterEntity onCloseFn={closeDialog} />
 				<VisuallyHidden asChild>
 					<DialogDescription>Add entity</DialogDescription>
 				</VisuallyHidden>

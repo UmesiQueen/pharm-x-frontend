@@ -101,15 +101,20 @@ const columns = [
 const Batch: React.FC = () => {
 	const [data, setData] = React.useState<BatchType[] | []>([]);
 	const [globalFilter, setGlobalFilters] = React.useState("");
-	const { isAllBatchDetailsFetched, isAllBatchDetailsLoading, batchDetails } =
-		useReadBatchDetails();
+	const {
+		isAllBatchDetailsFetched,
+		isAllBatchDetailsLoading,
+		batchDetails,
+		isBatchDetailsRefetching,
+	} = useReadBatchDetails();
 	const { userStore } = React.useContext(global_ctx);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	React.useEffect(() => {
-		if (isAllBatchDetailsFetched) setData(batchDetails);
+		if (isAllBatchDetailsFetched && !isBatchDetailsRefetching)
+			setData(batchDetails);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isAllBatchDetailsFetched]);
+	}, [isAllBatchDetailsFetched, isBatchDetailsRefetching]);
 
 	const table = useReactTable({
 		data,
