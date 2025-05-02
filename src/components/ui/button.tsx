@@ -62,6 +62,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 					"text-transparent": loading,
 				})}
 				ref={ref}
+				disabled={loading}
 				{...props}
 			>
 				{loading && (
