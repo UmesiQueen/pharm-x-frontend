@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiProvider } from "wagmi";
 import { baseSepolia } from "@reown/appkit/networks";
+import type { AppKitNetwork } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import "./index.css";
 import { router } from "./routes.tsx";
@@ -28,7 +29,7 @@ const metadata = {
 };
 
 // 3. Set the networks
-const networks = [baseSepolia];
+const networks: [AppKitNetwork, ...AppKitNetwork[]] = [baseSepolia];
 
 // 4. Create Wagmi Adapter
 const wagmiAdapter = new WagmiAdapter({
